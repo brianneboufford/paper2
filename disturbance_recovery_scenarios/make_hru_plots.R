@@ -18,6 +18,11 @@ fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios")
 
 
 hru_af <- st_read(hru_all_forest_path)
+ 
+# percent forested calculation 
+hru_forest_area <- sum(st_area(hru_af[!hru_af$LAND_US %in% c("WET_LAND", "ALPINE", "SHRUB"), ]))/(1000*1000)
+percent_for <- hru_forest_area/(sum(st_area(hru_af)/(1000*1000)))
+
 dist_shp_path <- dist_shp_path[!grepl("_40_", dist_shp_path)]
 dist_shp_path <- dist_shp_path[grepl(".shp$", dist_shp_path)]
 

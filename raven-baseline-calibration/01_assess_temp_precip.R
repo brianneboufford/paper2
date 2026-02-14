@@ -27,7 +27,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 weather_data_path <- file.path(".", "data", "weather_validation_data")
 snow_summary_path <- file.path(weather_data_path, "snow_summary")
 weather_file_path <- file.path(weather_data_path, "climate-daily.csv")
-weather_run_path <- file.path(".", "raven-runs", "Baseline2", "Runs", "Trapping_weather_baseline")
+weather_run_path <- file.path(".", "raven-runs", "Baseline2", "Runs", "Trapping_weather_baseline_dec10")
 fig_path <- file.path("data", "figs", "baseline_model_calibration")
 
 # list of temp 

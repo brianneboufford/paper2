@@ -16,6 +16,10 @@ library(terra)
 library(sf)
 library(stringr)
 library(ggplot2)
+library(strucchange)
+library(changepoint)
+
+# can try change point package
 
 setwd("C:/Users/blbouf/Sync/Paper2")
 
@@ -70,23 +74,85 @@ results_clean <- na.omit(results) %>%
   unique()
 
 results_grouped <- results_clean %>%
-  group_by(elevation) %>%
-  summarize(lai_av = mean(LAI),
-            forest_type = first(forest_type))
+  group_by(dem) %>%
+  summarize(lai_av = mean(LAI))
 
 # ------------------------------------------------------------------------------
 # plot
 # ------------------------------------------------------------------------------
 
-ggplot(results_grouped, aes(x = lai_av, y = elevation, color = forest_type)) +
-  geom_point(alpha = 0.6) +                 # scatter points
-  #geom_smooth(method = "lm", se = TRUE) +   # fitted regression line
+lai_elev_plot <- ggplot(results_grouped, aes(x = lai_av, y = dem)) +
+  geom_point(alpha = 0.1) +
+  geom_vline(xintercept = lai_cp, linetype = "dashed", 
+             linewidth = 0.5, colour = "red") +
   labs(x = "LAI",
-    y = "Elevation (m)",
-    title = "Elevation vs LAI by Forest Type"
+       y = "Elevation (m)",
+       title = ""
   ) +
   theme_bw()
 
+ggsave(lai_elev_plot, 
+       filename = file.path("data", "figs", "lai_vs_elevation", "lai_elevation_plot.png"),
+       dpi = 300, 
+       units = "in",
+       height = 8, 
+       width = 8)
+
+# ------------------------------------------------------------------------------
+# sub sample data and detect breakpoint 
+# -------------------------------------------------------------------------------
+
+# subsample 10 000 points
+df_samp <- dplyr::sample_n(results_grouped, 10000)
+
+# order sampled and full dataset 
+lai_samp_ordered <- df_samp[order(df_samp$dem), ]
+lai_ordered <- results_grouped[order(results_grouped$dem), ]
+
+lai_ordered$dem <- round(lai_ordered$dem, digits = 0)
+#lai_ordered$lai_av <- round(lai_ordered$lai_av, digits = 1)
+
+lai_ordered_av <- lai_ordered %>% 
+  group_by(dem) %>%
+  summarize(lai_av = mean(lai_av))
+
+#lai_ordered_av <- lai_ordered_av[lai_ordered_av$dem > 1000, ]
+#lai_ordered_av <- lai_ordered_av[lai_ordered_av$dem < 1850, ]
+
+# get single breakpoint
+cp_mean <- cpt.mean(lai_ordered_av$lai_av, method = "AMOC")
+# this gives us the change point index of 675
+
+lai_cp <- lai_ordered_av$lai_av[675]
+elev_cp <- lai_ordered_av$dem[675]
+
+
+el_lai_cp_plot <- ggplot(lai_ordered_av, aes(x = dem, y = lai_av)) +
+  geom_point(alpha = 0.4, size = 0.8) +                 
+  geom_vline(xintercept = elev_cp, linetype = "dashed", 
+             linewidth = 0.5, colour = "red") +
+  labs(x = "Elevation (m)",
+       y = "LAI",
+       title = ""
+  ) +
+  theme_bw()
+
+lai_elev_samp_plot <- ggplot(df_samp, aes(x = lai_av, y = dem)) +
+  geom_point(alpha = 0.1) +
+  geom_hline(yintercept = elev_cp, linetype = "dashed", 
+             linewidth = 0.5, colour = "red") +
+  labs(x = "LAI",
+       y = "Elevation (m)",
+       title = ""
+  ) +
+  theme_bw()
+
+ggsave(el_lai_cp_plot, 
+       filename = file.path("data", "figs", "lai_vs_elevation", "cp_plot.png"),
+       dpi = 300, 
+       units = "in",
+       height = 5, 
+       width = 7)
 # ------------------------------------------------------------------------------
 # function to get elevation and LAI for each mature forest HRU  
 # ------------------------------------------------------------------------------
@@ -97,23 +163,47 @@ summarize_lai_by_elevation <- function(yr,
                                        hru_files, 
                                        hru_files_base_path){
   
+  # peak LAI for year of interest
   peak_lai_i <- grepl(yr, names(peak_lai))
   p_lai <- peak_lai[[peak_lai_i]]
   
+  # make mask layer
+  lai_mask <- p_lai 
+  lai_mask[!is.na(lai_mask)] <- 1
+  
+  # transform dem so it matches lai 
+  dem_t <- resample(dem, p_lai)
+  dem_c <- crop(dem_t, p_lai)
+  dem_c <- dem_c*lai_mask
+  ext(dem_c) <- ext(p_lai)
+  
+  # stack lai and dem
+  rast_data <- c(p_lai, dem_c)
+  
+  # hru of year of interest 
   hru_i <- hru_files[grepl(yr, hru_files)]
   hru_path <- file.path(hru_files_base_path, hru_i)
-  hru <- st_read(hru_path)
+  hru <- st_read(hru_path) %>% 
+    st_transform(., crs(p_lai))
   
+  # subset mature forested HRUs
   hru_forested <- hru[hru$VEG_CLA == "mature", ]
-  hru_lai <- extract(p_lai, hru_forested, fun = mean)
-  hru_elev <- extract(dem_masked, hru_forested, fun = mean)
   
-  results <- cbind(hru_elev, hru_lai, hru_forested$frst_cl) %>% 
-    select(-c("ID")) %>% 
-    select(-c("ID"))
+  # mask out non forested areas from the rast data 
+  rast_data_mf <- mask(rast_data, hru_forested)
   
-  names(results) <- c("elevation", "LAI", "forest_type")
+  rast_data_df <- as.data.frame(rast_data_mf)
+  names(rast_data_df) <- c("LAI", "dem")
+  rast_data_df$yr <- yr
+  # hru_lai <- extract(p_lai, hru_forested, fun = mean)
+  # hru_elev <- extract(dem_masked, hru_forested, fun = mean)
   
-  return(results)
+  # results <- cbind(hru_elev, hru_lai, hru_forested$frst_cl) %>% 
+  #   select(-c("ID")) %>% 
+  #   select(-c("ID"))
+  # 
+  # names(results) <- c("elevation", "LAI", "forest_type")
+  
+  return(rast_data_df)
   
 }

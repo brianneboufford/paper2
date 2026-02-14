@@ -23,8 +23,8 @@ setwd(project_path)
 # raven run  path
 raven_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios")
 
-calls_file <- file.path(raven_run_path, "Trapping_hru_calls.txt")
-calls_file_new <- file.path(raven_run_path, "Trapping_dist_scen_calls.txt")
+calls_file <- file.path(raven_run_path, "Trapping_dist_scen_calls_dec4.txt")
+calls_file_new <- file.path(raven_run_path, "Trapping_dist_scen_calls_dec4.txt")
 
 # ---- READ FIRST LINE ----
 lines <- readLines(calls_file)
@@ -51,7 +51,7 @@ make_new_line <- function(f) {
   new <- str_replace(new, "Trapping_all_forest", base)
   
   # replace the Runs folder output path
-  new <- str_replace(new, "Runs\\\\Trapping_all_forest", paste0("Runs\\", base))
+  new <- str_replace(new, "Runs_dec4\\\\Trapping_all_forest", paste0("Runs_dec4\\", base))
   
   return(new)
 }
