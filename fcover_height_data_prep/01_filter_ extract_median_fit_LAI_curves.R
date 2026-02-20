@@ -2,6 +2,8 @@
 # filter, extract median, and fit quandtratic function to seasonal LAI curves 
 # 
 # february 13, 2026
+# last updated february 19, 2026 to have more filtering on LAI values - removing physically unrealistic values
+#
 # ------------------------------------------------------------------------------
 
 # library 
@@ -20,7 +22,7 @@ library(ggplot2)
 
 # fcover, veg height, and LAI
 veg_params_path <- file.path(".", "data", "forest_params_by_age", 
-                             "sampled_veg_params_byLAI_GRP_2015_2021_feb13.csv") # fcover and height
+                             "sampled_veg_params_byLAI_GRP_2015_2021_feb19.csv") # was feb 13 # can also try with all of the data instead
 
 zone_path <- file.path(".", "data", "src", "ntems", "zone_key.csv")
 
@@ -120,13 +122,56 @@ veg_data_test <- veg_data_test %>%
   mutate(april_lai = if_else(april_lai > q60_july, NA, april_lai)) %>%
   mutate(may_lai = if_else(may_lai > q80_july, NA, may_lai))
 
+veg_data_test1 <- veg_data_test %>%
+  
+  # age between 7 and 25 i.e. not disturbed from 2014-2021 so chm is indicative of height
+  # if chm > 20 rm 
+  dplyr::filter(!(age > 7 & age < 15 & X2014_height > 15)) %>% 
+  dplyr::filter(!(age >= 15  & age < 25 & X2014_height > 16)) %>% 
+  # height > 10m and less than 7 yrs old 
+  dplyr::filter(!(age < 7 & X2014_height > 10)) 
+  
+  # dplyr::filter(!(age > 7 & age < 25 & jan_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & feb_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & mar_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & april_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & may_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & june_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & july_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & aug_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & sept_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & oct_lai > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & nov_i > 3)) %>% 
+  # dplyr::filter(!(age > 7 & age < 25 & dec_i > 3)) %>%
+  #
+  
+# rm entries only not whole rows where LAI is wrong 
+veg_data_test1$jan_lai[veg_data_test1$age < 10 & veg_data_test1$jan_lai > 3] <- NA
+veg_data_test1$feb_lai[veg_data_test1$age < 10 & veg_data_test1$feb_lai > 3] <- NA
+veg_data_test1$mar_lai[veg_data_test1$age < 10 & veg_data_test1$mar_lai > 3] <- NA
+veg_data_test1$april_lai[veg_data_test1$age < 10 & veg_data_test1$april_lai > 3] <- NA
+veg_data_test1$may_lai[veg_data_test1$age < 10 & veg_data_test1$may_lai > 3] <- NA
+veg_data_test1$june_lai[veg_data_test1$age < 10 & veg_data_test1$june_lai > 3] <- NA
+veg_data_test1$july_lai[veg_data_test1$age < 10 & veg_data_test1$july_lai > 3] <- NA
+veg_data_test1$aug_lai[veg_data_test1$age < 10 & veg_data_test1$aug_lai > 3] <- NA
+veg_data_test1$sept_lai[veg_data_test1$age < 10 & veg_data_test1$sept_lai > 3] <- NA
+veg_data_test1$oct_lai[veg_data_test1$age < 10 & veg_data_test1$oct_lai > 3] <- NA
+veg_data_test1$nov_i[veg_data_test1$age < 10 & veg_data_test1$nov_i > 3] <- NA
+veg_data_test1$dec_i[veg_data_test1$age < 10 & veg_data_test1$dec_i > 3] <- NA
+
+
+ggplot(data = veg_data_test1[veg_data_test1$age_class == "R4_g0" & veg_data_test1$age == 20, ], aes(x = X2014_height, y = july_lai)) + 
+  geom_point(alpha = 0.1)
+
+ggplot(data = veg_data_test1[veg_data_test1$age_class == "R4_g1" & veg_data_test1$age == 20, ], aes(x = X2014_height, y = july_lai)) + 
+  geom_point(alpha = 0.1)
 
 # -------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
 # median calculation 
 # ------------------------------------------------------------------------------
-reclass_lai <- veg_data_test  %>% 
+reclass_lai <- veg_data_test1  %>% 
   group_by(age_class) %>%
   summarize(#med_apr_lai = round(median(april_lai, na.rm = TRUE),2),
             med_may_lai = round(median(may_lai, na.rm = TRUE),2),
@@ -137,7 +182,7 @@ reclass_lai <- veg_data_test  %>%
             med_oct_lai = round(median(oct_lai, na.rm = TRUE),2))
          #   med_nov_lai = round(median(nov_i, na.rm = TRUE),2))
 
-winter_meds <- veg_data_test %>%
+winter_meds <- veg_data_test1 %>%
   pivot_longer(
     cols = c(nov_i, dec_i, jan_lai, feb_lai, mar_lai, april_lai),
     names_to = "month",
@@ -305,12 +350,12 @@ pred_data_final <- lai_models %>%
   unnest(c(newdata, preds))
 
 pred_df_final <- pred_data_final %>% 
-  select(c("age_class", "lai_grp", "preds"))
+  select(c("age_class", "lai_grp", "preds", "month_num"))
 
-names(pred_df_final) <- c("age_class", "lai_grp", "lai")
+names(pred_df_final) <- c("age_class", "lai_grp", "lai", "month_num")
 
 write.csv(pred_df_final, 
-          file.path(result_path, "median_LAI_ALS_ELEV_recovery_feb13.csv"),
+          file.path(result_path, "median_LAI_ALS_ELEV_recovery_feb19.csv"),
           row.names = FALSE)
 
 # ------------------------------------------------------------------------------

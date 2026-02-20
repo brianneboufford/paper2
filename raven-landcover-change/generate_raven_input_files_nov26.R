@@ -2,6 +2,7 @@
 # Using Trapping_paper2_baseline as a template to generate new baseline RVH file 
 # 
 # November 26th, 2025
+# last used/ edited Feb 19
 #-------------------------------------------------------------------------------
 
 # packages 
@@ -10,9 +11,9 @@ library(RavenR)
 project_path <- file.path("C:", "Users", "blbouf", "Sync", "Paper2")
 setwd(project_path)
 
-baseline_raven_path <- file.path(".", "raven-runs", "Baseline2")
+baseline_raven_path <- file.path(".", "raven-runs", "Baseline3")
 
-hru_path <- file.path(".", "data", "LCC_HRU_files", "Dec2", "HRUs_1923_2023", "HRU_1980.shp")
+hru_path <- file.path(".", "data", "LCC_HRU_files", "Feb19", "HRUs_1923_2023", "HRU_1980.shp")
 
 hrus <- st_read(hru_path)
 n_hrus <- length(hrus$ID)
@@ -39,7 +40,7 @@ bl_sb$Profile <- "08NN019"
 bl_sb$ReachLength <- 24.20766
 bl_sb$Gauged <- 1
 
-rvn_rvh_write(filename = file.path(".", "raven-runs", "Baseline2", "Trapping_HRU_baseline.rvh"),
+rvn_rvh_write(filename = file.path(".", "raven-runs", "Baseline3", "Trapping_HRU_baseline.rvh"),
               HRUtable = bl_hru,
               SBtable = bl_sb)
 

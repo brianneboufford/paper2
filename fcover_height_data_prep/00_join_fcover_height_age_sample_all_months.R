@@ -56,6 +56,13 @@ if(TRUE){
   # last change year polygon later 
   lcy_poly_path <- file.path(".", "data", "src", "ntems", "disturbance_year_polygon.shp")
   
+  # 2014 chm 
+  chm_path <- file.path(".", "data", "src", "lidar_derived", "chm.tif")
+  
+  # 2014 standard metrics 
+  std_metrics_path <- file.path(".", "data", "src", "lidar_derived", "standard_metrics.tif")
+  
+  
 }
 
 if(TRUE){
@@ -82,26 +89,31 @@ if(TRUE){
   peak_fcov <- fcov[[grepl("_07", names(fcov))]]
   peak_fcov <- peak_fcov[[1:(nlyr(peak_fcov) - 2)]]
   
-  # chm height 
-  h_chm <- rast(h_chm_path) %>% # for 2014
-    terra::project(crs(fcov))
-  
   # unique years
   years <- 2015:2021
   
-  # dem
-  dem <- rast(dem_path)
-  
-  age_combined <- rast(file.path(".", "data", "age", "age_combined.tif")) %>%
-    terra::resample(dem, method='mode')
+  age_combined <- rast(file.path(".", "data", "age", "age_combined.tif"))
   age_combined <- age_combined[[-1]]
   
+  # dem
+  dem <- rast(dem_path) %>% 
+    terra::resample(age_combined, method = "average")
+  
   zone_raster <- rast(file.path(".", "data", "src", "BEC", "zone_raster.tif")) %>%
-    terra::resample(dem, method='mode')
+    terra::resample(age_combined, method='mode')
   
   # skipping for now
   hru_2023 <- st_read(hru_path) %>%
     st_transform(., crs = crs(age_combined))
+  
+  chm <- rast(chm_path) %>% 
+    terra::resample(age_combined, method='max') # taking max height because I want to remove edge pixels where LAI is too coarse to see forest next to 
+  # disturbed or regenerating stand, so If I take the max then I can filter out these pixels, If I use median or average it will just smooth them over 
+  # which I don't want bc age will be inaccurate for those conditions 
+  
+  fc <- rast(std_metrics_path) %>% 
+    subset("pzabove2") %>% 
+    terra::resample(age_combined, method='max')
   
   hru_rast <- rasterize(hru_2023, age_combined, field = "frst_cl")
   
@@ -182,11 +194,15 @@ join_fcover_age <- function(age_combined,
                             dec_lai,
                             
                             lcy_rast, 
+                            fc, # als forest cover 
+                            chm, # als chm (height)
                             
                             fc_ntems_files, # ntems file paths
                             h_ntems_files,  # ntems file paths 
                             
-                            peak_fcov # peak fcov from leaf 
+                            peak_fcov, # peak fcov from leaf 
+                            output_prod_path,
+                            years = years 
                             # h_chm # height from chm # remove for now
 ){
   
@@ -239,7 +255,7 @@ join_fcover_age <- function(age_combined,
     peak_fc_i <- peak_fcov[[1]] %>% 
       terra::project(., apr_i, method='average')
     
-    data_i <- c(age_i, zone_raster, hru_rast, dem, lcy_rast)
+    data_i <- c(age_i, zone_raster, hru_rast, dem, lcy_rast, chm, fc)
     data_i$lai_grp <- 0 
     data_i$lai_grp[data_i$dem >= 1560] <- 1
     
@@ -247,16 +263,22 @@ join_fcover_age <- function(age_combined,
                  aug_i, sept_i, oct_i, nov_i, dec_i, fc_i, h_i, peak_fc_i) %>% 
       terra::project(., data_i, method = "average")
     
+    data_rast <- c(data_i, data_ii) %>% 
+      writeRaster(., 
+                  file.path(output_prod_path, paste0("veg_data_", 2014+i, ".tif")),
+                  overwrite = TRUE)
+    
     df_1 <- as.data.frame(data_i, xy=TRUE) %>%
       na.omit() 
     df_2 <- as.data.frame(data_ii, xy=TRUE)
     
     df_i <- merge(df_1, df_2, by=c("x", "y"))
+    df_i$year <- years[i]
     
-    names(df_i) <- c("x", "y", "age", "id", "frst_cl", "dem", "lcy_id", "lai_grp",
+    names(df_i) <- c("x", "y", "age", "id", "frst_cl", "dem", "lcy_id", "2014_height", "2014_fc", "lai_grp",
                      "jan_lai", "feb_lai", "mar_lai", "april_lai", "may_lai", "june_lai", 
                      "july_lai", "aug_lai", "sept_lai", "oct_lai", "nov_i", "dec_i", "ntems_fcover", "ntems_height",
-                     "peak_fcover_leaf")
+                     "peak_fcover_leaf", "year")
     
     if (i == 1){
       full_df <- df_i
@@ -274,7 +296,7 @@ full_df <- join_fcover_age(age_combined = age_combined,
                            zone_raster = zone_raster,
                            hru_rast = hru_rast,
                            dem = dem,
-                           jan_lai = jan_lai,,
+                           jan_lai = jan_lai,
                            feb_lai = feb_lai, 
                            mar_lai = mar_lai,
                            apr_lai = apr_lai, 
@@ -287,16 +309,19 @@ full_df <- join_fcover_age(age_combined = age_combined,
                            nov_lai = nov_lai,
                            dec_lai = dec_lai, 
                            lcy_rast = lcy_rast,
+                           chm = chm, 
+                           fc = fc,
                            fc_ntems_files = fc_ntems_files,
                            h_ntems_files = h_ntems_files, 
-                           peak_fcov = peak_fcov)
+                           peak_fcov = peak_fcov, 
+                           output_prod_path = output_prod_path, 
+                           years = years)
 
 
 # write fully merged data 
 write.csv(full_df,
-          file.path(output_prod_path, "veg_params_2015_2021_allmonths_feb13.csv"),
+          file.path(output_prod_path, "veg_params_2015_2021_allmonths_feb19.csv"), # much smaller file size because downsampled to 
           row.names = FALSE)
-
 # ------------------------------------------------------------------------------
 # try sampling with limiting by same disturbance 
 # ------------------------------------------------------------------------------
@@ -405,7 +430,7 @@ sampled_frst_n <- sampled_frst_data %>%
 ########################################################
 # write out sampled forested data (10000 points per class)
 write.csv(sampled_frst_data,
-          file.path(output_prod_path, "sampled_veg_params_byLAI_GRP_2015_2021_feb13.csv"),
+          file.path(output_prod_path, "sampled_veg_params_byLAI_GRP_2015_2021_feb19.csv"),
           row.names = FALSE)
 
 
@@ -419,5 +444,5 @@ sampled_non_frst_df <- sampled_df[!sampled_df$frst_cl %in% c("MS", "ESSF", "IDF"
 
 # write 
 write.csv(sampled_non_frst_df,
-          file.path(output_prod_path, "sampled_veg_params_nonfrst_2015_2021_feb13.csv"),
+          file.path(output_prod_path, "sampled_veg_params_nonfrst_2015_2021_feb19.csv"),
           row.names = FALSE)

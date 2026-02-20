@@ -25,7 +25,7 @@ library(readr)
 # set wd 
 setwd(file.path("C:","Users", "blbouf", "Sync", "Paper2"))
 
-allHRUs_path <- file.path(".", "data", "LCC_HRU_files", "Dec2")
+allHRUs_path <- file.path(".", "data", "LCC_HRU_files", "Feb19")
 
 allHRUs_file <- list.files(allHRUs_path, full.names = TRUE)
 allHRUs_file <- allHRUs_file[grepl(pattern = "HRUs_1923_2023_updated_lai_classes.csv", 
@@ -59,7 +59,7 @@ output_dir <- allHRUs_path
 # for testing
 ################
 d <- output_dir
-scenario <- "Trapping_Dec2_baseline"
+scenario <- "Trapping_Feb19_baseline"
 
 names(allHRUs) <-  c("ID", "AREA", "ELEVATION", "LATITUDE", "LONGITUDE", "BASIN_ID",
                       "LAND_USE_CLASS", "VEG_CLASS", "SOIL_PROFILE" , "AQUIFER_PROFILE","TERRAIN_CLASS" ,

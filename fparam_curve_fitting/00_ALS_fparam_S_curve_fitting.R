@@ -17,6 +17,7 @@ library(future)
 library(future.apply)
 library(FlexParamCurve)
 library(nlme)
+library(minpack.lm)
 
 setwd("C:/Users/blbouf/Sync/Paper2")
 
@@ -30,7 +31,7 @@ als_veg_params_path <- file.path(".", "data", "forest_params_by_age", "fc_height
 zone_path <- file.path(".", "data", "src", "ntems", "zone_key.csv")
 
 # output path
-result_path <- file.path(file.path(".", "data", "median_forest_params_LAI_by_age")) 
+result_path <- file.path(file.path(".", "data", "med_forest_params_curve_fitted")) 
 
 # ------------------------------------------------------------------------------
 # load data
@@ -67,6 +68,7 @@ als_summary_df <- als_veg_data %>%
 keys_to_remove <- als_summary_df$als_grp_key[als_summary_df$n < 2]
 als_veg_data <- als_veg_data[!als_veg_data$als_grp_key %in% keys_to_remove, ]
 
+# get rse for each age 
 sampled_forested_rse <- als_veg_data %>%
   group_by(als_grp_key) %>%
   slice_sample(n = 10000) %>%
@@ -79,9 +81,10 @@ sampled_forested_rse <- als_veg_data %>%
             n_h = length(height))
 
 # data to remove 
-remove_fc_rse <- sampled_forested_rse$als_grp_key[sampled_forested_rse$rse_fcover > 0.04]
-remove_h_rse <- sampled_forested_rse$als_grp_key[sampled_forested_rse$rse_height > 0.04]
+remove_fc_rse <- sampled_forested_rse$als_grp_key[sampled_forested_rse$rse_fcover > 0.1] # was 0.04
+remove_h_rse <- sampled_forested_rse$als_grp_key[sampled_forested_rse$rse_height > 0.1]
 
+# unique IDs to remove bc RSE > 0.04 for either height or fc 
 remove_rse <- c(remove_fc_rse, remove_h_rse)
 
 remove_n <- sampled_forested_rse$als_grp_key[sampled_forested_rse$n_fc < 100]
@@ -146,40 +149,53 @@ als_veg_data <- assign_ALS_ageclass(als_veg_data, elev_zoned_classes, "eco")
 
 # filter out years > 100 bc low accuracy for age 
 als_veg_data <- als_veg_data[als_veg_data$age <= 100, ]
+als_veg_data1 <- als_veg_data[!als_veg_data$als_grp_key %in% remove_rse, ]
 
-g0_data <- als_veg_data[als_veg_data$lai_grp == "g0", ]
-g1_data <- als_veg_data[als_veg_data$lai_grp == "g1", ]
+als_veg_data1 <- als_veg_data1 %>%
+  dplyr::filter(!(age < 10 & height > 10)) %>%
+  dplyr::filter(!(age < 10 & fc > 50)) %>% 
+  dplyr::filter(!(age > 10 & age < 17 & height < 1 & fc < 10)) %>% 
+  dplyr::filter(!(age > 10 & age < 17  & height > 15 & fc > 60))
+
+g0_data <- als_veg_data1[als_veg_data1$lai_grp == "g0", ]
+g1_data <- als_veg_data1[als_veg_data1$lai_grp == "g1", ]
+
+
+test_g0 <- g0_data[g0_data$age < 5, ]
+test_g0 <- test_g0[test_g0$age > 12, ] 
+
+ggplot(test_g0, aes(x = fc, y = height)) + 
+  geom_point(alpha = 0.1)
 
 # ------------------------------------------------------------------------------
 # g0 Forest Cover 
 # ------------------------------------------------------------------------------
 
 df1 <- g0_data
-df1 <- df1[!df1$als_grp_key %in% remove_rse, ]
 
-avg_fc <- df1 %>%
+avg_fc_g0 <- df1 %>%
   group_by(age) %>%
   summarise(
-    mean_fc = mean(fc, na.rm = TRUE),
+    mean_fc = median(fc, na.rm = TRUE),
     .groups = "drop"
   )
 
-fit_fc <- nls(
+fit_fc_g0 <- nls(
   mean_fc ~ SSlogis(age, Asym, xmid, scal),
-  data = avg_fc
+  data = avg_fc_g0
 )
 
-age_seq <- data.frame(
-  age = seq(min(avg_fc$age), max(avg_fc$age), length.out = 300)
+age_seq_fc_g0 <- data.frame(
+  age = seq(min(avg_fc_g0$age), max(avg_fc_g0$age), length.out = 100)
 )
 
-age_seq$fc_fit <- predict(fit_fc, newdata = age_seq)
+age_seq_fc_g0$fc_fit <- predict(fit_fc_g0, newdata = age_seq_fc_g0)
 
-ggplot(avg_fc, aes(age, mean_fc)) +
+ggplot(avg_fc_g0, aes(age, mean_fc)) +
   geom_point(size = 2) +
   geom_line(color = "grey60") +
   geom_line(
-    data = age_seq,
+    data = age_seq_fc_g0,
     aes(age, fc_fit),
     color = "blue",
     linewidth = 1.2
@@ -191,38 +207,37 @@ ggplot(avg_fc, aes(age, mean_fc)) +
   ) +
   theme_minimal()
 
-summary(fit_fc)
+summary(fit_fc_g0)
 
 # ------------------------------------------------------------------------------
 # g1 Forest Cover 
 # ------------------------------------------------------------------------------
 
 df2 <- g1_data
-df2 <- df2[!df2$als_grp_key %in% remove_rse, ]
 
-avg_fc <- df2 %>%
+avg_fc_g1 <- df2 %>%
   group_by(age) %>%
   summarise(
     mean_fc = median(fc, na.rm = TRUE),
     .groups = "drop"
   )
 
-fit_fc <- nls(
+fit_fc_g1 <- nls(
   mean_fc ~ SSlogis(age, Asym, xmid, scal),
-  data = avg_fc
+  data = avg_fc_g1
 )
 
-age_seq <- data.frame(
-  age = seq(min(avg_fc$age), max(avg_fc$age), length.out = 300)
+age_seq_fc_g1 <- data.frame(
+  age = seq(min(avg_fc_g1$age), max(avg_fc_g1$age), length.out = 101)
 )
 
-age_seq$fc_fit <- predict(fit_fc, newdata = age_seq)
+age_seq_fc_g1$fc_fit <- predict(fit_fc_g1, newdata = age_seq_fc_g1)
 
-ggplot(avg_fc, aes(age, mean_fc)) +
+ggplot(avg_fc_g1, aes(age, mean_fc)) +
   geom_point(size = 2) +
   geom_line(color = "grey60") +
   geom_line(
-    data = age_seq,
+    data = age_seq_fc_g1,
     aes(age, fc_fit),
     color = "blue",
     linewidth = 1.2
@@ -234,64 +249,48 @@ ggplot(avg_fc, aes(age, mean_fc)) +
   ) +
   theme_minimal()
 
-summary(fit_fc)
+summary(fit_fc_g1)
 
 # ------------------------------------------------------------------------------
 # g1 Height 
 # ------------------------------------------------------------------------------
 
 df3 <- g1_data
-df3 <- df3[!df3$als_grp_key %in% remove_rse, ]
 # df <- df[!df$age %in% c(30, 31, 32, 33, 34, 35, 36, 37, 39, 40), ]
 
-avg_height <- df3 %>%
+avg_height_g1 <- df3 %>%
   group_by(age) %>%
   summarise(
-    mean_h = mean(height, na.rm = TRUE),
+    mean_h = median(height, na.rm = TRUE),
     .groups = "drop"
   )
 
-fit_fc <- nls(
-  mean_h ~ SSlogis(age, Asym, xmid, scal),
-  data = avg_height
-)
-
-fit_fc <- nls(
+fit_h_g1 <- nlsLM(
   mean_h ~ L / (1 + exp(-k * (age - x0))),
-  data = avg_height,
+  data = avg_height_g1,
   start = list(
-    L  = max(avg_height$mean_h, na.rm = TRUE),
-    k  = 0.05,
-    x0 = median(avg_height$age)
-  )
-)
-
-fit_h <- nlsLM(
-  mean_h ~ L / (1 + exp(-k * (age - x0))),
-  data = avg_height,
-  start = list(
-    L  = max(avg_height$mean_h),
+    L  = max(avg_height_g1$mean_h),
     k  = 0.03,
-    x0 = median(avg_height$age)
+    x0 = median(avg_height_g1$age)
   ),
-  lower = c(L = 10, k = 0.005, x0 = min(avg_height$age)),
-  upper = c(L = 80, k = 0.2,   x0 = max(avg_height$age)),
+  lower = c(L = 10, k = 0.005, x0 = min(avg_height_g1$age)),
+  upper = c(L = 80, k = 0.2,   x0 = max(avg_height_g1$age)),
   control = nls.lm.control(maxiter = 500)
 )
 
-age_seq <- data.frame(
-  age = seq(min(avg_fc$age), max(avg_fc$age), length.out = 300)
+age_seq_h_g1 <- data.frame(
+  age = seq(min(avg_height_g1$age), max(avg_height_g1$age), length.out = 101)
 )
 
-age_seq$fc_fit <- predict(fit_h, newdata = age_seq)
+age_seq_h_g1$fc_fit <- predict(fit_h_g1, newdata = age_seq_h_g1)
 
-ggplot(avg_height, aes(age, mean_h)) +
+ggplot(avg_height_g1, aes(age, mean_h)) +
   geom_point(size = 2) +
   geom_line(color = "grey60") +
   geom_line(
-    data = age_seq,
+    data = age_seq_h_g1,
     aes(age, fc_fit),
-    color = "blue",
+    color = "darkgreen",
     linewidth = 1.2
   ) +
   labs(
@@ -301,40 +300,52 @@ ggplot(avg_height, aes(age, mean_h)) +
   ) +
   theme_minimal()
 
-summary(fit_fc)
+summary(fit_h_g1)
 
 # ------------------------------------------------------------------------------
-# g1 Height 
+# g0 Height 
 # ------------------------------------------------------------------------------
 
 df4 <- g0_data
-df4 <- df4[!df4$als_grp_key %in% remove_rse, ]
 
-avg_height <- df4 %>%
+avg_height_g0 <- df4 %>%
   group_by(age) %>%
   summarise(
-    mean_h = mean(height, na.rm = TRUE),
+    mean_h = median(height, na.rm = TRUE),
     .groups = "drop"
   )
 
-fit_fc <- nls(
+fit_h_g0 <- nls(
   mean_h ~ SSlogis(age, Asym, xmid, scal),
-  data = avg_height
+  data = avg_height_g0
 )
 
-age_seq <- data.frame(
-  age = seq(min(avg_fc$age), max(avg_fc$age), length.out = 300)
+fit_h_g0 <- nlsLM(
+  mean_h ~ L / (1 + exp(-k * (age - x0))),
+  data = avg_height_g0,
+  start = list(
+    L  = max(avg_height_g0$mean_h),
+    k  = 0.03,
+    x0 = median(avg_height_g0$age)
+  ),
+  lower = c(L = 10, k = 0.005, x0 = min(avg_height_g0$age)),
+  upper = c(L = 80, k = 0.2,   x0 = max(avg_height_g0$age)),
+  control = nls.lm.control(maxiter = 500)
 )
 
-age_seq$fc_fit <- predict(fit_h, newdata = age_seq)
+age_seq_h_g0 <- data.frame(
+  age = seq(min(avg_height_g0$age), max(avg_height_g0$age), length.out = 100)
+)
 
-ggplot(avg_height, aes(age, mean_h)) +
+age_seq_h_g0$fc_fit <- predict(fit_h_g0, newdata = age_seq_h_g0)
+
+ggplot(avg_height_g0, aes(age, mean_h)) +
   geom_point(size = 2) +
   geom_line(color = "grey60") +
   geom_line(
-    data = age_seq,
+    data = age_seq_h_g0,
     aes(age, fc_fit),
-    color = "blue",
+    color = "darkgreen",
     linewidth = 1.2
   ) +
   labs(
@@ -344,7 +355,54 @@ ggplot(avg_height, aes(age, mean_h)) +
   ) +
   theme_minimal()
 
-summary(fit_fc)
+summary(fit_h_g0)
+
+# ------------------------------------------------------------------------------
+# join all fit data and turn into useful CSV format for raven input file 
+# development
+# ------------------------------------------------------------------------------
+
+# rename columns and add lai_grp before join 
+names(age_seq_fc_g0) <- c("age", "forest_cover")
+names(age_seq_h_g0) <- c("age", "height")
+g0_fitted_data <- merge(age_seq_fc_g0, age_seq_h_g0, by = "age")
+g0_fitted_data$lai_grp <- "g0"
+
+names(age_seq_fc_g1) <- c("age", "forest_cover")
+names(age_seq_h_g1) <- c("age", "height")
+g1_fitted_data <- merge(age_seq_fc_g1, age_seq_h_g1, by = "age")
+g1_fitted_data$lai_grp <- "g1"
+
+# merge all data into one 
+h_fc_data <- rbind(g0_fitted_data, g1_fitted_data)
+
+# pull function to assign class outside of wrapper function 
+assign_age_lai_grp_class <- function(age, zone, zoned_classes) {
+  class_df <- zoned_classes[[as.character(zone)]]
+  if (is.null(class_df)) return(zone)
+  idx <- which(age >= class_df$min_age & age < class_df$max_age)
+  if (length(idx) == 0) return(zone)
+  class_df$class[idx[1]]
+}
+
+# apply 
+h_fc_data <- h_fc_data %>%
+  rowwise() %>%
+  mutate(age_class = assign_age_lai_grp_class(age, lai_grp, elev_zoned_classes)) %>%
+  ungroup()
+
+h_fc_grouped <- h_fc_data %>% 
+  group_by(age_class) %>% 
+  summarize(med_fc = median(forest_cover),
+            med_h = median(height))
+
+# -------
+# write output 
+# -------
+
+write.csv(h_fc_grouped, 
+          file.path(result_path, "height_fcover_med_Scurve_feb17.csv"),
+          row.names = FALSE)
 
 # ------------------------------------------------------------------------------
 # functions 

@@ -4,6 +4,7 @@
 # copied from HRU_age_layers_2.R
 # November 10th, 2025
 # updated December 2nd to have the 7-class ecosystem scale classfification
+# updated again Feb 19, 2026 to have 11 class Elevation based ecosystem scale classification 
 # ------------------------------------------------------------------------------
 
 # library 
@@ -29,7 +30,11 @@ hru_path <- file.path(".", "data", "HRU_delineation", "new_HRUs", "TrappingCreek
 # ------------------------------------------------------------------------------
 # all forested Catchment
 hru_start <- st_read(hru_path)
-
+hru_start$lai_grp <- "g0"
+hru_start$lai_grp[hru_start$ELEVATI > 1560] <- "g1"
+hru_start$lai_grp[hru_start$VEG_CLA == "WET_LAND"] <- "WET_LAND"
+hru_start$lai_grp[hru_start$VEG_CLA == "ALPINE"] <- "ALPINE"
+hru_start$lai_grp[hru_start$VEG_CLA == "SHRUB"] <- "SHRUB"
 # ------------------------------------------------------------------------------
 # start at some mature age 
 # ------------------------------------------------------------------------------
@@ -67,16 +72,32 @@ zoned_classes <- list(
   )
 )
 
+# look up table basedc on LAI groups (from elevation LAI breakpoint)
+elev_zoned_classes <- list(
+  g0 = data.frame(
+    min_age = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50),
+    max_age = c(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, Inf),
+    class   = c("D_g0", "R1_g0", "R2_g0", "R3_g0", "R4_g0", "R5_g0", 
+                "R6_g0", "R7_g0", "R8_g0", "R9_g0", "M_g0")
+  ),
+  g1 = data.frame(
+    min_age = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50),
+    max_age = c(5, 10, 15, 20, 25, 30, 35, 40, 45, 50, Inf),
+    class   = c("D_g1", "R1_g1", "R2_g1", "R3_g1", "R4_g1", "R5_g1", 
+                "R6_g1", "R7_g1", "R8_g1", "R9_g1","M_g1")
+  )
+)
+
 
 # ----------------------------------------------------------
 # hydrographs start at 1924
-output_path <- file.path(".", "data", "LCC_HRU_files", "Dec2")
+output_path <- file.path(".", "data", "LCC_HRU_files", "Feb19")
 
 # make input to Dynamic_HRUs.R
 make_annual_HRUs(hru_start = hru_start, 
                  start_year = first_year,
                  end_year = end_year, 
-                 zoned_classes = zoned_classes,
+                 zoned_classes = elev_zoned_classes,
                  output_path = output_path)
 
 #####################################################################
@@ -106,7 +127,7 @@ update_vegetation_class <- function(df, zoned_classes) {
   }
   
   # Apply row-wise using mapply, preserving original VEG_CLA if needed
-  df$VEG_CLA <- mapply(assign_class, df$age, df$forest_class, df$VEG_CLA)
+  df$VEG_CLA <- mapply(assign_class, df$age, df$lai_grp, df$VEG_CLA)
   df$LAND_US <- df$VEG_CLA
   
   return(df)
@@ -169,15 +190,15 @@ make_annual_HRUs <- function(hru_start, start_year, end_year, zoned_classes, out
     
   }
   
-  # remove burn year so it will write properly
-  hru_start_write <- hru_start # %>% select(-c("burn_yr")) 
+  # remove lai_grp so it will write properly
+  hru_start_write <- hru_start %>% select(-c("lai_grp")) 
   write.csv(hru_start_write, 
             file.path(output_path, paste0("HRUs_", start_year, "_", end_year, "_updated_lai_classes.csv")),
             row.names = FALSE)
   
   # remove other columns 
   hru_write <- hru_start_write %>%
-    select(-c("harv_yr", "forest_class",
+    select(-c("harv_yr", "forest_class", 
               "age", "Year"))
   
   write.csv(hru_write, 

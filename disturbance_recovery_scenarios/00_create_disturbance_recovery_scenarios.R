@@ -3,6 +3,7 @@
 # 
 # adapted from 005_LAI_seasonal_curves_figure
 # Dec 1, 2025
+# adpated Feb 19 for new 
 #-------------------------------------------------------------------------------
 
 # ------------------------------------------------------------------------------
@@ -26,7 +27,7 @@ library(docstring)
 setwd(file.path("C:","Users", "blbouf", "Sync", "Paper2"))
 output_path <- file.path(".", "data", "disturbance_recovery_scenarios")
 
-allHRUs_path <- file.path(".", "data", "LCC_HRU_files", "Nov26", "HRUs_1923_2023")
+allHRUs_path <- file.path(".", "data", "LCC_HRU_files", "Feb19", "HRUs_1923_2023") # was nov 16
 hru_2023_path <- file.path(allHRUs_path, "HRU_2023.shp")
 hru_path <- file.path(".", "data", "HRU_delineation", "new_HRUs", "TrappingCreek_HRUs_no_slp_asp_1125.shp")
 
@@ -140,7 +141,7 @@ disturbance_files <- list.files(output_path,
 
 disturbance_shp_files <- disturbance_files[grepl(pattern = "0yrs.shp$", disturbance_files)]
 
-recovery_years <- c(5, 10, 20, 30, 40, 50)
+recovery_years <- c(5, 10, 15, 20, 25, 30, 35, 40, 45, 50) # originally was 5, 10, 20, ... every 10 yrs.. 
 
 lapply(disturbance_shp_files, 
        recover_disturbed_polygons,
