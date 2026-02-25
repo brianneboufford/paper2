@@ -104,17 +104,19 @@ Dynamic_HRUs = function(allHRUs, scenario, d = getwd()){
   
   second_number <- function(x) stringr::str_extract_all(x, "\\d+")[[1]][2]
   
+  third_number <- function(x) stringr::str_extract_all(x, "\\d+")[[1]][3]
+  
   # Land Use Change Calls
   make_change = function(x){
     
     if (grepl("D_", x) | grepl("M_", x)){
-      c(paste(':LandUseChange', x, gsub('_[0-9]{4}', '', x), paste0(parse_number(x),'-01-01')),
-        paste(':VegetationChange', x, gsub('_[0-9]{4}', '', x), paste0(parse_number(x),'-01-01'))
+      c(paste(':LandUseChange', x, gsub('_[0-9]{4}', '', x), paste0(second_number(x),'-01-01')),
+        paste(':VegetationChange', x, gsub('_[0-9]{4}', '', x), paste0(second_number(x),'-01-01'))
       )
     } else {
     
-    c(paste(':LandUseChange', x, gsub('_[0-9]{4}', '', x), paste0(second_number(x),'-01-01')),
-      paste(':VegetationChange', x, gsub('_[0-9]{4}', '', x), paste0(second_number(x),'-01-01'))
+    c(paste(':LandUseChange', x, gsub('_[0-9]{4}', '', x), paste0(third_number(x),'-01-01')),
+      paste(':VegetationChange', x, gsub('_[0-9]{4}', '', x), paste0(third_number(x),'-01-01'))
     )
     }
   }

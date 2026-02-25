@@ -126,13 +126,24 @@ cp_mean <- cpt.mean(lai_ordered_av$lai_av, method = "AMOC")
 lai_cp <- lai_ordered_av$lai_av[675]
 elev_cp <- lai_ordered_av$dem[675]
 
-
+# lai vs elevation
 el_lai_cp_plot <- ggplot(lai_ordered_av, aes(x = dem, y = lai_av)) +
   geom_point(alpha = 0.4, size = 0.8) +                 
   geom_vline(xintercept = elev_cp, linetype = "dashed", 
              linewidth = 0.5, colour = "red") +
   labs(x = "Elevation (m)",
        y = "LAI",
+       title = ""
+  ) +
+  theme_bw()
+
+# flip coords
+el_lai_cp_plot <- ggplot(lai_ordered_av, aes(x = lai_av, y = dem)) +
+  geom_point(alpha = 0.4, size = 0.8) +                 
+  geom_hline(yintercept = elev_cp, linetype = "dashed", 
+             linewidth = 0.5, colour = "red") +
+  labs(x = "LAI",
+       y = "Elevation",
        title = ""
   ) +
   theme_bw()
@@ -148,11 +159,11 @@ lai_elev_samp_plot <- ggplot(df_samp, aes(x = lai_av, y = dem)) +
   theme_bw()
 
 ggsave(el_lai_cp_plot, 
-       filename = file.path("data", "figs", "lai_vs_elevation", "cp_plot.png"),
+       filename = file.path("data", "figs", "lai_vs_elevation", "cp_plot_feb20.png"),
        dpi = 300, 
        units = "in",
        height = 5, 
-       width = 7)
+       width = 5)
 # ------------------------------------------------------------------------------
 # function to get elevation and LAI for each mature forest HRU  
 # ------------------------------------------------------------------------------

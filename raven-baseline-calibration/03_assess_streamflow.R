@@ -24,7 +24,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------ 
 
-hru_run_path <- file.path(".", "raven-runs", "Baseline2", "Runs", "Trapping_hru_baseline_Dec2") 
+hru_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_hru_baseline_Feb20") 
 
 # list of hydrographs
 hydrograph_list <- list.files(hru_run_path, pattern="Hydrographs.csv", 
@@ -40,6 +40,7 @@ hydro <- prep_model_data(hydro, "baseline")
 
 model_data <- rbind(hydro)
 daily_average <- plot_average_daily(model_data)
+daily_average
 
 # ------------------------------------------------------------------------------
 # functions 

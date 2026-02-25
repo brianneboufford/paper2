@@ -159,7 +159,7 @@ vegclasses_df <- vegclasses_df %>%
   left_join(fc_h %>% select(c("age_class", "med_h")), by = c("ID" = "age_class"))
 
 vegclasses_df$MAX_LAI <- round(vegclasses_df$MAX_LAI, digits = 2)
-vegclasses_df$MAX_HT <- round(as.numeric(vegclasses_df$med_h), digits = 1)
+vegclasses_df$MAX_HT <- round(as.numeric(vegclasses_df$med_h), digits = 1)/100
 vegclasses_df <- vegclasses_df %>% select(-c("med_h"))
 
 # :SeasonalCanopyLAI

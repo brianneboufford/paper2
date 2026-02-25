@@ -27,7 +27,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 weather_data_path <- file.path(".", "data", "weather_validation_data")
 snow_summary_path <- file.path(weather_data_path, "snow_summary")
 weather_file_path <- file.path(weather_data_path, "climate-daily.csv")
-weather_run_path <- file.path(".", "raven-runs", "Baseline2", "Runs", "Trapping_weather_baseline_dec10")
+weather_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_weather_baseline_feb23")
 fig_path <- file.path("data", "figs", "baseline_model_calibration")
 
 # list of temp 
@@ -210,13 +210,13 @@ precip_plot <- ggplot(data=precip_df, aes(x=sum_precip_meas, y=sum_precip_raven,
             inherit.aes = FALSE, hjust = 1, vjust = 1, size = 4)
 
 ggsave(temp_plot,
-       filename = file.path(fig_path, paste0("temp_compare",".png")),
+       filename = file.path(fig_path, paste0("temp_compare_feb23",".png")),
        units = "in", 
        height = 4,
        width = 6)
 
 ggsave(precip_plot,
-       filename = file.path(fig_path, paste0("precip_compare", ".png")),
+       filename = file.path(fig_path, paste0("precip_compare_feb23", ".png")),
        units = "in", 
        height = 4,
        width = 6)
@@ -259,7 +259,7 @@ av_temp_plot <- ggplot(temp_long, aes(x = month_int, y = Mean, color = Type, fil
   )
 
 ggsave(av_temp_plot,
-       filename = file.path(fig_path, paste0("av_temp_compare", ".png")),
+       filename = file.path(fig_path, paste0("av_temp_compare_feb23", ".png")),
        units = "in", 
        height = 4,
        width = 6)
@@ -309,14 +309,14 @@ av_precip_plot <- ggplot(precip_long, aes(x = factor(month_int), y = Mean, fill 
 # )
 
 ggsave(av_precip_plot,
-       filename = file.path(fig_path, paste0("av_precip_compare", ".png")),
+       filename = file.path(fig_path, paste0("av_precip_compare_feb23", ".png")),
        units = "in", 
        height = 4,
        width = 6)
 
 av_together <- grid.arrange(av_temp_plot, av_precip_plot, ncol = 2, widths=c(2,3))
 ggsave(av_together,
-       filename = file.path(fig_path, paste0("av_precip_temp_compare", ".png")),
+       filename = file.path(fig_path, paste0("av_precip_temp_compare_feb23", ".png")),
        units = "in", 
        height = 4,
        width = 12)

@@ -27,7 +27,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------ 
 
-hru_run_path <- file.path(".", "raven-runs", "Baseline2", "Runs", "Trapping_HRU_baseline_Dec10")
+hru_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_HRU_baseline_Feb20") # was Dec 10
 fig_path <- file.path(".", "data", "figs", "baseline_model_calibration")
 
 # list of hydrographs
@@ -41,10 +41,10 @@ hydro_data <- na.omit(hydro_data)
 hydro_data <- hydro_data[hydro_data$time > 365, ]
 
 hydroplot_baseline <- ggplot() + 
-  geom_line(data = hydro_data, aes(x=date, y=TRAPPING_CREEK_NEAR_THE_MOUTH..observed...m3.s., color = "Observed")) + 
-  geom_line(data = hydro_data, aes(x=date, y=TRAPPING_CREEK_NEAR_THE_MOUTH..m3.s., color = "Modelled")) + 
+  geom_line(data = hydro_data, aes(x=date, y=TRAPPING_CREEK_NEAR_THE_MOUTH..observed...m3.s., color = "Observed"), alpha = 0.8) + 
+  geom_line(data = hydro_data, aes(x=date, y=TRAPPING_CREEK_NEAR_THE_MOUTH..m3.s., color = "Modelled"), alpha = 0.8) + 
   theme_minimal(16) + 
-  scale_color_manual(name = "", values = c("Observed" = "#4575b4", "Modelled" = "#d73027")) +
+  scale_color_manual(name = "", values = c("Observed" = "#7fbc41", "Modelled" = "#c51b7d")) +
   labs(title="", x="Date", y=paste0("Streamflow (m\u00B3/s)")) + 
   theme(axis.text = element_text(size = 10), 
         axis.title = element_text(size = 10),
@@ -55,7 +55,7 @@ hydroplot_baseline <- ggplot() +
         legend.key = element_rect(fill = "white", colour = NA))
 
 ggsave(hydroplot_baseline,
-       filename = file.path(fig_path, "daily_hydrograph_baseline_paper2_dec10.png"),
+       filename = file.path(fig_path, "daily_hydrograph_baseline_paper2_feb24.png"),
        units = "in",
        width = 10,
        height = 4)

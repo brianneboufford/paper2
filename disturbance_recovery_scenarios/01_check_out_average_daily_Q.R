@@ -25,18 +25,20 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # ------------------------------------------------------------------------------ 
 
 hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios", "Runs")
-fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios")
-hru_run_path <- file.path(".", "raven-runs", "Baseline2", "Runs", "Trapping_HRU_baseline_Dec10")
+fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Feb20")
+hru_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_HRU_baseline_Feb20") # was dec 10
+hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19", "Runs")
 # list of hydrographs
 hydrograph_list_all <- list.files(hru_run_path, pattern="Hydrographs.csv", 
                               recursive = TRUE, 
                               full.name = TRUE)
 
 hydrograph_list_af <- hydrograph_list_all[1] %>% read.csv()
-hydrograph_list_high30 <- hydrograph_list_all[23] %>% read.csv()
-hydrograph_list_high15 <- hydrograph_list_all[9] %>% read.csv()
-hydrograph_list_low15 <- hydrograph_list_all[44] %>% read.csv()
-hydrograph_list_low30 <- hydrograph_list_all[58] %>% read.csv()
+
+hydrograph_list_high30 <- hydrograph_list_all[35] %>% read.csv()
+hydrograph_list_high15 <- hydrograph_list_all[13] %>% read.csv()
+hydrograph_list_low15 <- hydrograph_list_all[68] %>% read.csv()
+hydrograph_list_low30 <- hydrograph_list_all[90] %>% read.csv()
 
 hydroaf <- prep_model_data(hydrograph_list_af, "af") %>% rbind()
 hydrohigh30 <- prep_model_data(hydrograph_list_high30, "q50 High Elevation (30%)") %>% rbind()

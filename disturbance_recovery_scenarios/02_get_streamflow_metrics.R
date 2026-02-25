@@ -27,10 +27,10 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------ 
 
-hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios", "Runs_dec4")
+hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19", "Runs")
 outpath <- file.path(".", "data", "streamflow_analysis")
 
-fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios")
+fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Feb20")
 
 # list of hydrographs
 hydrograph_list <- list.files(hru_run_path, pattern="Hydrographs.csv", 
@@ -46,7 +46,7 @@ results <- lapply(hydrograph_list,
   do.call(rbind, .)
 
 write.csv(results, 
-          file.path(outpath, "flow_metrics_dec4.csv"),
+          file.path(outpath, "flow_metrics_feb24.csv"),
           row.names = FALSE)
 
 # ------------------------------------------------------------------------------
@@ -150,11 +150,11 @@ metric_time_series_plot <- function(df_q20, metric_name, fig_path){
       color = "Simulation"
     )
   
-  ggsave(q20,
-         filename = file.path(fig_path, paste0(metric_name, ".png")),
-         units = "in",
-         width = 8,
-         height = 8)
+  # ggsave(q20,
+  #        filename = file.path(fig_path, paste0(metric_name, ".png")),
+  #        units = "in",
+  #        width = 8,
+  #        height = 8)
 }
 # ---- 2. PLOT ----
 

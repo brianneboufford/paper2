@@ -27,7 +27,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 weather_data_path <- file.path(".", "data", "weather_validation_data")
 snow_summary_path <- file.path(weather_data_path, "snow_summary")
 weather_file_path <- file.path(weather_data_path, "climate-daily.csv")
-snow_run_path <- file.path(".", "raven-runs", "Baseline2", "Runs", "Trapping_snow_baseline_dec10") 
+snow_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_snow_baseline_feb23") 
 
 swe_list <- list.files(snow_run_path,
                        pattern = "SNOW",
