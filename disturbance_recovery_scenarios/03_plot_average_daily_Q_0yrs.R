@@ -14,6 +14,7 @@ library(HyMETT)
 library(Metrics)
 library(hydrostats)
 library(gridExtra)
+library(stringr)
 
 setwd("C:/Users/blbouf/Sync/Paper2")
 # ------------------------------------------------------------------------------
@@ -31,13 +32,133 @@ hydrograph_list_all <- list.files(hru_run_path, pattern="Hydrographs.csv",
 
 hydrograph_list_af <- hydrograph_list_all[1] %>% read.csv()
 
+# subset to only recently disturbed runs (0yrs)
 hydrograph_0yrs_list <- hydrograph_list_all[grepl(hydrograph_list_all, pattern = "_0yrs")]
 hydrograph_0yrs_list <- hydrograph_0yrs_list[!grepl(hydrograph_0yrs_list, pattern = "_40_")]
 
+# prep all forested data
 hydroaf <- prep_model_data_af(hydrograph_list_af, "af") %>% rbind()
 
+# prep all other data
 hydro_data <- lapply(hydrograph_0yrs_list, prep_model_data_sims) %>% 
   do.call(rbind, .)
+
+# group data and calculate quantiles
+sim_data_grouped <- hydro_data %>%
+  group_by(Site, date = yday(as.Date(date)), Type) %>%
+  mutate(date = yday(as.Date(date))) %>%
+  group_by(Site, date, Type) %>%
+  summarise(Qhigh = quantile(Value, Qup, na.rm = TRUE),
+            Qlow = quantile(Value, Qlow, na.rm = TRUE),
+            Value = mean(Value, na.rm = TRUE)) %>%
+  ungroup() 
+
+af_data_grouped <- hydroaf %>%
+  group_by(Site, date = yday(as.Date(date)), Type) %>%
+  mutate(date = yday(as.Date(date))) %>%
+  group_by(Site, date, Type) %>%
+  summarise(Qhigh = quantile(Value, Qup, na.rm = TRUE),
+            Qlow = quantile(Value, Qlow, na.rm = TRUE),
+            Value = mean(Value, na.rm = TRUE)) %>%
+  ungroup() 
+
+af_data_grouped <- af_data_grouped[af_data_grouped$Type == "Simulated", ]
+sim_data_grouped <- sim_data_grouped[sim_data_grouped$Type == "Simulated", ]
+
+#all_data_grouped <- rbind(af_data_grouped, model_data_grouped)
+
+af_data_grouped$Site[af_data_grouped$Site == "af"] <- "All Forested"
+af_data_grouped <- af_data_grouped %>% select(-c("Site"))
+
+sim_data_grouped <- sim_data_grouped %>% 
+  mutate(Site = factor(Site, 
+                       levels = c("high 10%", "high 15%", "high 20%", "high 30%", 
+                                  "low 10%", "low 15%", "low 20%", "low 30%"), 
+                       labels = c(expression(Elevation>=~p[50]:~10*'%'),
+                                  expression(Elevation>=~p[50]:~15*'%'), 
+                                  expression(Elevation>=~p[50]:~20*'%'), 
+                                  expression(Elevation>=~p[50]:~30*'%'), 
+                                  expression(Elevation<~p[50]:~10*'%'), 
+                                  expression(Elevation<~p[50]:~15*'%'), 
+                                  expression(Elevation<~p[50]:~20*'%'), 
+                                  expression(Elevation<~p[50]:~30*'%'))))
+
+av_plot <- ggplot(
+  data = sim_data_grouped,
+  aes(x = as.Date(strptime(date, format = "%j")), y = Value)
+) +
+  # Simulation
+  geom_ribbon(
+    aes(ymin = Qlow, ymax = Qhigh, fill = "Simulation"),
+    alpha = 0.25,
+    colour = NA
+  ) +
+  geom_line(aes(colour = "Simulation")) +
+  
+  facet_wrap(~Site, nrow = 2, labeller = as_labeller(label_parsed)) +
+  
+  # All forested
+  geom_ribbon(
+    data = af_data_grouped,
+    aes(
+      x = as.Date(strptime(date, format = "%j")),
+      y = Value,
+      ymin = Qlow,
+      ymax = Qhigh,
+      fill = "All Forested"
+    ),
+    alpha = 0.25,
+    colour = NA,
+    inherit.aes = FALSE
+  ) +
+  geom_line(
+    data = af_data_grouped,
+    aes(
+      x = as.Date(strptime(date, format = "%j")),
+      y = Value,
+      colour = "All Forested"
+    ),
+    inherit.aes = FALSE
+  ) +
+  
+  scale_colour_manual(
+    name = "",
+    values = c(
+      "Simulation"   = "#c51b7d",
+      "All Forested" =  "#4d9221"
+    )
+  ) +
+  scale_fill_manual(
+    name = "",
+    values = c(
+      "Simulation"   = "#c51b7d",
+      "All Forested" =  "#4d9221"
+    )
+  ) +
+  scale_x_date(
+    breaks = as.Date(paste0("2026-", c("01-01","04-01","07-01","10-01"))),
+    labels = c("Jan", "Apr", "Jul", "Oct")
+  ) + 
+  labs(y = expression("Average Daily Streamflow (" * m^3/s * ")")) +
+  theme_bw(14) +
+  theme(
+    legend.position = "bottom",
+    axis.title.x = element_blank(),
+    axis.title.y = element_text(size = 12),
+    axis.text = element_text(size = 10), 
+    strip.background = element_rect(fill = NA)
+  )
+
+av_plot
+
+ggsave(av_plot,
+       filename = file.path(fig_path, "av_daily_Q_0yrs.png"),
+       units = "in",
+       dpi = 300,
+       width = 8, 
+       height = 5)
+
+  
 
 # HERE facet plot by Site for hydro data and to each plot add the AF hydro data !!
 

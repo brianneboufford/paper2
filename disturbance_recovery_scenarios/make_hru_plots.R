@@ -64,15 +64,17 @@ test2 <- plot_grid(test,
 
 ggsave(test2, 
        filename = file.path(fig_path, "simulation_areas_plots_legend.png"),
+       dpi = 300,
        units = "in",
        width = 10, 
-       height = 10)
+       height = 12)
 
 ggsave(test, 
        filename = file.path(fig_path, "simulation_areas_plots.png"),
+       dpi = 300,
        units = "in",
        width = 10, 
-       height = 10)
+       height = 12)
 
 # ------------------------------------------------------------------------------
 # functions 
@@ -237,10 +239,10 @@ make_dist_scen_plot <- function(dist_shp,
       y = "Percent area (%)",
       title = ""
     ) +
-    theme_bw() + coord_flip() +
+    theme_minimal() + coord_flip() +
     theme(axis.text = element_text(size = 6), 
           axis.title = element_text(size = 8),
-          plot.margin = unit(c(0, 0, 0, 0), "cm"))
+          plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
   
   slp_plot <- ggplot(slp_summary_df, aes(x = slope_bin, y = percent)) +
     geom_col(fill = "grey", colour = "black", position = "dodge", width = 0.9) +
@@ -249,10 +251,10 @@ make_dist_scen_plot <- function(dist_shp,
       y = "Percent area (%)",
       title = ""
     ) +
-    theme_bw() + coord_flip() +
+    theme_minimal() + coord_flip() +
     theme(axis.text = element_text(size = 6), 
           axis.title = element_text(size = 8),
-          plot.margin = unit(c(0, 0, 0, 0), "cm"))
+          plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
   
   sim_plot <- ggplot(hru_sim) +
     geom_sf(aes(fill = VEG_CLA, color = VEG_CLA)) +  # keep color aes but hide borders
@@ -267,7 +269,7 @@ make_dist_scen_plot <- function(dist_shp,
       )
     ) + 
     theme(legend.position = "none", 
-          plot.margin = unit(c(0, 0, 0, 0), "cm"))
+          plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
   
   asp_plot  <- asp_plot  +
     theme(axis.title.x = element_blank())
@@ -286,8 +288,8 @@ make_dist_scen_plot <- function(dist_shp,
     plot_grid(asp_plot, slp_plot, ncol = 2),
     x_label,
     ncol = 1,
-    rel_heights = c(4, 1, 0.15)
-  )
+    rel_heights = c(3, 1, 0.15)
+  ) + theme(plot.background = element_rect(color = "black"))
   
 }
 
