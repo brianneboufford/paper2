@@ -18,6 +18,7 @@ library(future.apply)
 library(FlexParamCurve)
 library(nlme)
 library(minpack.lm)
+library(cowplot)
 
 setwd("C:/Users/blbouf/Sync/Paper2")
 
@@ -29,6 +30,8 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 als_veg_params_path <- file.path(".", "data", "forest_params_by_age", "fc_height_2015_feb11.csv") # fcover and height
 
 zone_path <- file.path(".", "data", "src", "ntems", "zone_key.csv")
+
+fig_path <- file.path(".", "data", "figs", "forest_params")
 
 # output path
 result_path <- file.path(file.path(".", "data", "med_forest_params_curve_fitted")) 
@@ -177,6 +180,8 @@ avg_fc_g0 <- df1 %>%
   group_by(age) %>%
   summarise(
     mean_fc = median(fc, na.rm = TRUE),
+    Qhigh = quantile(fc, 0.9, na.rm = TRUE),
+    Qlow = quantile(fc, 0.1, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -186,26 +191,32 @@ fit_fc_g0 <- nls(
 )
 
 age_seq_fc_g0 <- data.frame(
-  age = seq(min(avg_fc_g0$age), max(avg_fc_g0$age), length.out = 100)
+  age = seq(min(avg_fc_g0$age), max(avg_fc_g0$age), length.out = 101)
 )
 
 age_seq_fc_g0$fc_fit <- predict(fit_fc_g0, newdata = age_seq_fc_g0)
 
-ggplot(avg_fc_g0, aes(age, mean_fc)) +
-  geom_point(size = 2) +
-  geom_line(color = "grey60") +
+fc_g0_plot <- ggplot(avg_fc_g0, aes(age, mean_fc)) +
+  #  geom_point(size = 2) +
+  #  geom_line(color = "grey60") +
   geom_line(
     data = age_seq_fc_g0,
     aes(age, fc_fit),
-    color = "blue",
+    color = "black",
     linewidth = 1.2
+  ) +
+  geom_ribbon(
+    aes(ymin = Qlow, ymax = Qhigh),
+    alpha = 0.25,
+    colour = NA
   ) +
   labs(
     x = "Age",
-    y = "Mean g0 FC",
-    title = "Logistic S-curve fit: FC vs Age"
+    y = "Forest Cover (%)",
+    title = ""
   ) +
-  theme_minimal()
+  ylim(c(0, 100)) +
+  theme_minimal(14)
 
 summary(fit_fc_g0)
 
@@ -219,6 +230,8 @@ avg_fc_g1 <- df2 %>%
   group_by(age) %>%
   summarise(
     mean_fc = median(fc, na.rm = TRUE),
+    Qhigh = quantile(fc, 0.9, na.rm = TRUE),
+    Qlow = quantile(fc, 0.1, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -233,21 +246,27 @@ age_seq_fc_g1 <- data.frame(
 
 age_seq_fc_g1$fc_fit <- predict(fit_fc_g1, newdata = age_seq_fc_g1)
 
-ggplot(avg_fc_g1, aes(age, mean_fc)) +
-  geom_point(size = 2) +
-  geom_line(color = "grey60") +
+fc_g1_plot <-ggplot(avg_fc_g1, aes(age, mean_fc)) +
+  #geom_point(size = 2) +
+  #eom_line(color = "grey60") +
   geom_line(
-    data = age_seq_fc_g1,
+    data = age_seq_fc_g0,
     aes(age, fc_fit),
-    color = "blue",
+    color = "black",
     linewidth = 1.2
+  ) +
+  geom_ribbon(
+    aes(ymin = Qlow, ymax = Qhigh),
+    alpha = 0.25,
+    colour = NA
   ) +
   labs(
     x = "Age",
-    y = "Mean FC g1",
-    title = "Logistic S-curve fit: FC vs Age"
+    y = "Forest Cover (%)",
+    title = ""
   ) +
-  theme_minimal()
+  ylim(c(0, 100)) +
+  theme_minimal(14)
 
 summary(fit_fc_g1)
 
@@ -262,6 +281,8 @@ avg_height_g1 <- df3 %>%
   group_by(age) %>%
   summarise(
     mean_h = median(height, na.rm = TRUE),
+    Qhigh = quantile(height, 0.9, na.rm = TRUE),
+    Qlow = quantile(height, 0.1, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -284,21 +305,27 @@ age_seq_h_g1 <- data.frame(
 
 age_seq_h_g1$fc_fit <- predict(fit_h_g1, newdata = age_seq_h_g1)
 
-ggplot(avg_height_g1, aes(age, mean_h)) +
-  geom_point(size = 2) +
-  geom_line(color = "grey60") +
+h_g1_plot <- ggplot(avg_height_g1, aes(age, mean_h)) +
+  # geom_point(size = 2) +
+  # geom_line(color = "grey60") +
+  geom_ribbon(
+    aes(ymin = Qlow, ymax = Qhigh),
+    alpha = 0.25,
+    colour = NA
+  ) +
   geom_line(
     data = age_seq_h_g1,
     aes(age, fc_fit),
-    color = "darkgreen",
+    color = "black",
     linewidth = 1.2
   ) +
   labs(
     x = "Age",
-    y = "Mean Height",
-    title = "Logistic S-curve fit: FC vs Age"
+    y = "Height (m)",
+    title = ""
   ) +
-  theme_minimal()
+  ylim(c(0, 35)) +
+  theme_minimal(14)
 
 summary(fit_h_g1)
 
@@ -312,6 +339,8 @@ avg_height_g0 <- df4 %>%
   group_by(age) %>%
   summarise(
     mean_h = median(height, na.rm = TRUE),
+    Qhigh  = quantile(height, 0.9, na.rm = TRUE),
+    Qlow = quantile(height, 0.1, na.rm = TRUE),
     .groups = "drop"
   )
 
@@ -334,28 +363,62 @@ fit_h_g0 <- nlsLM(
 )
 
 age_seq_h_g0 <- data.frame(
-  age = seq(min(avg_height_g0$age), max(avg_height_g0$age), length.out = 100)
+  age = seq(min(avg_height_g0$age), max(avg_height_g0$age), length.out = 101)
 )
 
 age_seq_h_g0$fc_fit <- predict(fit_h_g0, newdata = age_seq_h_g0)
 
-ggplot(avg_height_g0, aes(age, mean_h)) +
-  geom_point(size = 2) +
-  geom_line(color = "grey60") +
+h_g0_plot <- ggplot(avg_height_g0, aes(age, mean_h)) +
+  #geom_point(size = 2) +
+  #geom_line(color = "grey60") +
+  geom_ribbon(
+    aes(ymin = Qlow, ymax = Qhigh),
+    alpha = 0.25,
+    colour = NA
+  ) +
   geom_line(
     data = age_seq_h_g0,
     aes(age, fc_fit),
-    color = "darkgreen",
+    color = "black",
     linewidth = 1.2
   ) +
   labs(
     x = "Age",
-    y = "Mean Height",
-    title = "Logistic S-curve fit: FC vs Age"
+    y = "Height (m)",
+    title = ""
   ) +
-  theme_minimal()
+  ylim(c(0, 35)) +
+  theme_minimal(14)
 
 summary(fit_h_g0)
+
+# ------------------------------------------------------------------------------
+# make plot 
+# ------------------------------------------------------------------------------
+
+forest_plots <- plot_grid(fc_g0_plot, fc_g1_plot, h_g0_plot, h_g1_plot, 
+                          nrow = 2, 
+                          rel_widths = c(1,1),
+                          align  = "hv", 
+                          labels = "auto" 
+                          )
+
+ggsave(forest_plots, 
+       filename = file.path(fig_path, "fc_h_plots.png"),
+       dpi = 600, 
+       units = "in", 
+       width = 7, 
+       height = 7)
+
+# ------------------------------------------------------------------------------
+# get summary stats for results section 
+# ------------------------------------------------------------------------------
+fit_fc_g0 
+fit_fc_g1
+fit_h_g0
+fit_h_g1
+age_seq_fc_g0
+age_seq_fc_g1
 
 # ------------------------------------------------------------------------------
 # join all fit data and turn into useful CSV format for raven input file 
@@ -446,3 +509,4 @@ assign_ALS_ageclass <- function(df, zoned_classes, class_type) {
   return(df)
   
 }
+

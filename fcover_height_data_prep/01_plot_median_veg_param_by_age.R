@@ -18,7 +18,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------
 
-veg_path <- file.path(".", "data", "forest_params_by_age", "sampled_veg_params_byLAI_GRP_2015_2021_feb10.csv")
+veg_path <- file.path(".", "data", "forest_params_by_age", "sampled_veg_params_byLAI_GRP_2015_2021_feb13.csv")
 
 # ------------------------------------------------------------------------------
 # read data 

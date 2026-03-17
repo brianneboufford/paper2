@@ -27,8 +27,9 @@ veg_params_path <- file.path(".", "data", "forest_params_by_age",
 zone_path <- file.path(".", "data", "src", "ntems", "zone_key.csv")
 
 # output path
-result_path <- file.path(file.path(".", "data", "median_forest_params_LAI_by_age")) 
+result_path <- file.path(".", "data", "median_forest_params_LAI_by_age")
 
+fig_path <- file.path(".", "data", "figs", "forest_params")
 # ------------------------------------------------------------------------------
 # load data
 # ------------------------------------------------------------------------------
@@ -323,17 +324,66 @@ env_df$age_class <- stringr::str_replace(env_df$age_class, "_g1", "")
 pred_df$age_class <- stringr::str_replace(pred_df$age_class, "_g0", "")
 pred_df$age_class <- stringr::str_replace(pred_df$age_class, "_g1", "")
 
+pred_df <- pred_df %>% 
+  mutate(lai_grp = factor(lai_grp, 
+                       levels = c("g1", "g0"), 
+                       labels = c(expression(Elevation>=z[cp]),
+                                  expression(Elevation<z[cp])))) 
+
+pred_df <- pred_df %>%
+  mutate(age_class = factor(age_class,
+                            levels = c("D", "R1", "R2", "R3", "R4", "R5", "R6",
+                                       "R7", "R8", "R9", "M"),
+                            labels = c(expression(0-5), 
+                                       expression(6-10),
+                                       expression(11-15),
+                                       expression(16-20),
+                                       expression(21-25),
+                                       expression(26-30),
+                                       expression(31-35),
+                                       expression(36-40),
+                                       expression(41-45),
+                                       expression(46-50),
+                                       expression('>'*50))))
+                                
 ggplot() +
   # geom_ribbon(data = env_df, aes(x = month_num, ymin = lai_p10, ymax = lai_p90),
   #   fill = "red", alpha = 0.4) +
   geom_line(data = pred_df, aes(x = month_num, y = lai_fit, colour = age_class), linewidth = 1) +
-  facet_grid(~lai_grp) +
+  facet_grid(~lai_grp, labeller = as_labeller(label_parsed)) +
   scale_x_continuous(breaks = c(1, 2, 3, 4, 5, 6, 7),
                      labels = c( "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Winter")) +
   labs(x = "Month", 
        y = "LAI",
        title = "Seasonal LAI") +
-  theme_bw()
+  theme_minimal() +
+  theme(legend.position = "bottom")
+
+lai_plot <- ggplot(pred_df, aes(x = month_num, y = lai_fit, group = age_class)) +
+  geom_line() +
+  facet_grid(
+    lai_grp ~ age_class,
+    scales = "free_x",
+    space  = "free_x",
+    labeller = as_labeller(label_parsed)
+  ) +
+  scale_x_continuous(
+    breaks = c(1, 4, 7),
+    labels = c("M", "A", "W")
+  ) +
+  labs(
+    x = "Month",
+    y = "LAI"
+  ) +
+  theme_bw() + 
+  theme(strip.background = element_rect("NA"))
+  
+ggsave(lai_plot, 
+       filename = file.path(fig_path, "fitted_lai_mar16.png"),
+       dpi = 1200, 
+       units = "in", 
+       width = 7,
+       height = 3)
 
 # ------------------------------------------------------------------------------
 # final estimates 

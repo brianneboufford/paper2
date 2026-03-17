@@ -74,14 +74,14 @@ sim_data_grouped <- sim_data_grouped %>%
   mutate(Site = factor(Site, 
                        levels = c("high 10%", "high 15%", "high 20%", "high 30%", 
                                   "low 10%", "low 15%", "low 20%", "low 30%"), 
-                       labels = c(expression(Elevation>=~p[50]:~10*'%'),
-                                  expression(Elevation>=~p[50]:~15*'%'), 
-                                  expression(Elevation>=~p[50]:~20*'%'), 
-                                  expression(Elevation>=~p[50]:~30*'%'), 
-                                  expression(Elevation<~p[50]:~10*'%'), 
-                                  expression(Elevation<~p[50]:~15*'%'), 
-                                  expression(Elevation<~p[50]:~20*'%'), 
-                                  expression(Elevation<~p[50]:~30*'%'))))
+                       labels = c(expression(Elevation>=~z[p50]:~10*'%'),
+                                  expression(Elevation>=~z[p50]:~15*'%'), 
+                                  expression(Elevation>=~z[p50]:~20*'%'), 
+                                  expression(Elevation>=~z[p50]:~30*'%'), 
+                                  expression(Elevation<~z[p50]:~10*'%'), 
+                                  expression(Elevation<~z[p50]:~15*'%'), 
+                                  expression(Elevation<~z[p50]:~20*'%'), 
+                                  expression(Elevation<~z[p50]:~30*'%'))))
 
 av_plot <- ggplot(
   data = sim_data_grouped,
@@ -152,7 +152,7 @@ av_plot <- ggplot(
 av_plot
 
 ggsave(av_plot,
-       filename = file.path(fig_path, "av_daily_Q_0yrs.png"),
+       filename = file.path(fig_path, "av_daily_Q_0yrs_mar16.png"),
        units = "in",
        dpi = 300,
        width = 8, 

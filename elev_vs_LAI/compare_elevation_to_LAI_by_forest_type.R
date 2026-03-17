@@ -126,6 +126,12 @@ cp_mean <- cpt.mean(lai_ordered_av$lai_av, method = "AMOC")
 lai_cp <- lai_ordered_av$lai_av[675]
 elev_cp <- lai_ordered_av$dem[675]
 
+elev_high <- lai_ordered_av[lai_ordered_av$dem >= elev_cp, ]
+elev_low <- lai_ordered_av[lai_ordered_av$dem < elev_cp, ]
+
+mean_lai_ehigh <- mean(elev_high$lai_av, na.rm = TRUE)
+mean_lai_elow <- mean(elev_low$lai_av, na.rm = TRUE)
+
 # lai vs elevation
 el_lai_cp_plot <- ggplot(lai_ordered_av, aes(x = dem, y = lai_av)) +
   geom_point(alpha = 0.4, size = 0.8) +                 
@@ -148,18 +154,42 @@ el_lai_cp_plot <- ggplot(lai_ordered_av, aes(x = lai_av, y = dem)) +
   ) +
   theme_bw()
 
+el_lai_cp_plot <- ggplot(lai_ordered_av, aes(x = lai_av, y = dem)) +
+  geom_point(alpha = 0.3, size = 0.8, colour = "#969696") +
+  
+  geom_hline(yintercept = elev_cp, linetype = "dashed",
+             linewidth = 0.8, colour = "#d73027") +
+  
+  # vertical line only ABOVE the horizontal line
+  geom_segment(aes(x = mean_lai_ehigh, xend = mean_lai_ehigh,
+                   y = elev_cp, yend = max(df_samp$dem)),
+               linetype = "dashed", linewidth = 0.8, colour = "#4575b4") +
+  
+  # vertical line only BELOW the horizontal line
+  geom_segment(aes(x = mean_lai_elow, xend = mean_lai_elow,
+                   y = min(df_samp$dem), yend = elev_cp),
+               linetype = "dashed", linewidth = 0.8, colour = "#4575b4") +
+  
+  labs(
+    x = "Mean Peak Annual LAI",
+    y = "Elevation (m)",
+    title = ""
+  ) +
+  theme_minimal()
+
 lai_elev_samp_plot <- ggplot(df_samp, aes(x = lai_av, y = dem)) +
   geom_point(alpha = 0.1) +
   geom_hline(yintercept = elev_cp, linetype = "dashed", 
              linewidth = 0.5, colour = "red") +
-  labs(x = "LAI",
+  geom_vline(xintercept = )
+  labs(x = "Mean Peak Annual LAI",
        y = "Elevation (m)",
        title = ""
   ) +
   theme_bw()
 
 ggsave(el_lai_cp_plot, 
-       filename = file.path("data", "figs", "lai_vs_elevation", "cp_plot_feb20.png"),
+       filename = file.path("data", "figs", "lai_vs_elevation", "cp_plot_mar6.png"),
        dpi = 300, 
        units = "in",
        height = 5, 

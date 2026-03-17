@@ -21,6 +21,7 @@ library(cowplot)
 library(ggpattern)
 library(fasstr)
 library(viridis)
+library(stringr)
 
 setwd("C:/Users/blbouf/Sync/Paper2")
 
@@ -50,8 +51,89 @@ write.csv(results,
           file.path(outpath, "flow_metrics_feb25.csv"),
           row.names = FALSE)
 
-results <- read.csv(file.path(outpath, "flow_metrics_feb24.csv"))
+results <- read.csv(file.path(outpath, "flow_metrics_mar10.csv"))
 
+# ------------------------------------------------------------------------------
+# make date of peak flow and peak flow box plot 
+# ------------------------------------------------------------------------------
+
+hydrograph_af <- read.csv(hydrograph_list[1])
+hydro_af <- prep_model_data_af(hydrograph_af, "All Forested")
+
+sims_list <- hydrograph_list[-1]
+sims_list <- sims_list[!grepl("_40_", sims_list)]
+
+sims_data <- lapply(sims_list, 
+                    prep_model_data_sims) %>%
+  do.call(rbind,.)
+sims_data <- sims_data[sims_data$Type == "Simulated", ]
+
+sims_data$year <- year(as.Date(sims_data$date))
+
+sims_data <- sims_data %>% 
+  subset(!year %in% c(1981, 2023))
+
+sims_data_ann <- sims_data %>% 
+  group_by(year, Site, recovery) %>%
+  summarize(
+    annual_peak_flow = max(Value),
+    date_peak_flow = yday(as.Date(date))[which.max(Value)] 
+  )
+
+sims_data_ann <- sims_data_ann %>% 
+  mutate(recovery =  
+         factor(recovery, 
+                levels = c("0yrs", "5yrs", "10yrs", "15yrs",
+                           "20yrs", "25yrs", "30yrs", "35yrs", "40yrs",
+                           "45yrs", "50yrs"), 
+                labels = c("0-5", "6-10", "11-15", "16-20",
+                           "21-25", "26-30", "31-35", "36-40", "41-45",
+                           "46-50", "AF")))
+
+peak_flow_box <- ggplot(data = sims_data_ann, aes(x = Site, y = annual_peak_flow, fill = recovery)) +
+  geom_boxplot(alpha = 0.8, outlier.alpha = 0.05) + 
+  scale_fill_manual(values = c("0yrs" = "#8e0152", 
+                               "5yrs" = "#c51b7d", 
+                               "10yrs" = "#de77ae", 
+                               "15yrs" = "#f1b6da", 
+                               "20yrs" = "#fde0ef", 
+                               "25yrs" = "#f7f7f7", 
+                               "30yrs" = "#e6f5d0", 
+                               "35yrs" = "#b8e186", 
+                               "40yrs" = "#7fbc41", 
+                               "45yrs" = "#4d9221", 
+                               "AF" = "#969696")) + 
+  labs(x = "Simulation", 
+       y = expression("Peak Streamflow ("*m^3/s*")"), 
+       legend = "Recovery") + 
+  theme_minimal() + 
+  theme(axis.text = element_text(size = 12), 
+        axis.title = element_text(size = 12), 
+        legend.position = "right")
+
+# dont love these boxplots 
+
+date_peak_flow_box <- ggplot(data = sims_data_ann, aes(x = Site, y = date_peak_flow, fill = recovery)) +
+  geom_boxplot(alpha = 0.8, outlier.alpha = 0.05) + 
+  scale_fill_manual(values = c("0-5" = "#8e0152", 
+                               "6-10" = "#c51b7d", 
+                               "11-15" = "#de77ae", 
+                               "16-20" = "#f1b6da", 
+                               "21-25" = "#fde0ef", 
+                               "26-30" = "#f7f7f7", 
+                               "31-35" = "#e6f5d0", 
+                               "36-40" = "#b8e186", 
+                               "41-45" = "#7fbc41", 
+                               "46-50" = "#4d9221", 
+                               "AF" = "#969696")) + 
+  coord_flip() + 
+  labs(x = "Simulation", 
+       y = expression("DoY Peak Streamflow"), 
+       legend = "Recovery") + 
+  theme_minimal() + 
+  theme(axis.text = element_text(size = 12), 
+        axis.title = element_text(size = 12), 
+        legend.position = "right")
 # ------------------------------------------------------------------------------
 # make plot 
 # ------------------------------------------------------------------------------ 
@@ -77,18 +159,76 @@ df <- joined_data %>%
 df <- df[df$scenario != "high_40", ]
 df <- df[df$scenario != "low_40", ]
 
+df <- df %>% 
+  mutate(scenario = factor(scenario, 
+                       levels = c("high_10", "high_15", "high_20", "high_30", 
+                                  "low_10", "low_15", "low_20", "low_30"), 
+                       labels = c(expression(z>=z[p50]:10*'%'),
+                                  expression(z>=z[p50]:15*'%'), 
+                                  expression(z>=z[p50]:20*'%'), 
+                                  expression(z>=z[p50]:30*'%'), 
+                                  expression(z<z[p50]:10*'%'), 
+                                  expression(z<z[p50]:15*'%'), 
+                                  expression(z<z[p50]:20*'%'), 
+                                  expression(z<z[p50]:30*'%'))))
+
+df_flood <- df[df$metrics %in% c("1Q2", "1Q5", "1Q20", "mean_annual_flow"), ] %>% 
+  mutate(metrics = factor(metrics, 
+                           levels = c("1Q2","1Q5", "1Q20", "mean_annual_flow"), 
+                           labels = c(expression(1*Q*2),
+                                      expression(1*Q*5),
+                                      expression(1*Q*20), 
+                                      expression(Mean~Annual~Q))))
+
+df_flood <- df_flood %>% 
+  mutate(yrs = factor(yrs, 
+                      levels = c(0, 5, 10, 15, 20, 25, 30, 35, 40, 45, 50),
+                      labels = c("0-5", "6-10", "11-15", "16-20", "21-25", "26-30", "31-35", 
+                                 "36-40", "41-45", "46-50", "AF")))
+
+df_flood <- df_flood[!grepl("AF", df_flood$yrs), ]
+df_flood$perc_diff <- round(df_flood$value_diff/df_flood$values_af*100, 2)
+
 # ------------------------------------------------------------------------------
 # make difference bar plot 
 # ------------------------------------------------------------------------------
 
-ggplot(df[df$metrics %in% c("1Q2", "1Q20", "mean_annual_flow"), ], aes(x = factor(yrs), y = value_diff)) +
-  geom_bar(stat = "identity", colour = "black", fill = "grey") +
-  facet_grid(metrics ~ scenario, scales = "free_y") +
+Qbar <- ggplot(df_flood, aes(x = factor(yrs), y = value_diff/values_af*100, fill = yrs)) +
+  geom_bar(stat = "identity", colour = "grey3") +
+  scale_fill_manual(values = c("0-5" = "#8e0152", 
+                               "6-10" = "#c51b7d", 
+                               "11-15" = "#de77ae", 
+                               "16-20" = "#f1b6da", 
+                               "21-25" = "#fde0ef", 
+                               "26-30" = "#f7f7f7", 
+                               "31-35" = "#e6f5d0", 
+                               "36-40" = "#b8e186", 
+                               "41-45" = "#7fbc41", 
+                               "46-50" = "#4d9221")) + 
+  facet_grid(metrics ~ scenario, scales = "free_y", 
+             labeller = as_labeller(label_parsed)) +
   labs(
-    x = "Years",
-    y = "Value difference"
+    x = "",
+    y = expression("Percent Difference from All Forested (%)"),
+    fill = "Recovery"
   ) +
-  theme_bw()
+  theme_bw(14) +
+  theme(axis.text.x = element_blank(),
+        axis.text.y = element_text(size = 10),
+        strip.text = element_text(size = 10),
+        strip.background = element_rect(NA),
+        axis.title = element_text(size = 12),
+        legend.position = "bottom", 
+        legend.text = element_text(size = 12), 
+        legend.title = element_text(size =12)) + 
+  guides(fill = guide_legend(nrow = 1))
+
+ggsave(Qbar, 
+       filename = file.path(fig_path, "Qmetric_barplot_mar16.png"),
+       units = "in",
+       width = 9,
+       height = 6, 
+       dpi = 300)
 
 ggplot(df[df$metrics %in% c("1Q2", "1Q20", "mean_annual_flow"), ], aes(x = factor(yrs), y = scenario, size = value_diff, colour = value_diff)) +
   geom_point(alpha = 0.6) +
@@ -335,3 +475,43 @@ calc_hydrograph_stats <- function(hydro_file){
   
   return(results)
 }
+
+# function to clean hydrograph data and add column with simulation name 
+prep_model_data_sims <- function(df_path){
+  
+  sim_name <- dirname(df_path) %>% basename() %>% str_remove("Trappingp50_") %>%
+    str_remove("_(\\d+?)yrs") %>% str_replace("_", " ") %>% paste0(., "%")
+  
+  recovery <- dirname(df_path) %>% basename() %>% str_remove("Trappingp50_") %>%
+    str_remove("_(\\d+?)_") %>% str_replace("high", "") %>% str_replace("low"
+    , "")
+  
+  df <- read.csv(df_path)
+  
+  
+  names(df) <- c("time", "date", "hour", "precip", "Simulated", "Observed")
+  df <- df %>% 
+    na.omit() %>%
+    pivot_longer(
+      cols = c("Observed", "Simulated"),  # selects the last two columns
+      names_to = "Type",
+      values_to = "Value"
+    )
+  df$Site <- sim_name
+  df$recovery <- recovery
+  return(df)
+} 
+
+
+prep_model_data_af <- function(df, data_name){
+  names(df) <- c("time", "date", "hour", "precip", "Simulated", "Observed")
+  df <- df %>% 
+    na.omit() %>%
+    pivot_longer(
+      cols = c("Observed", "Simulated"),  # selects the last two columns
+      names_to = "Type",
+      values_to = "Value"
+    )
+  df$Site <- data_name
+  return(df)
+} 
