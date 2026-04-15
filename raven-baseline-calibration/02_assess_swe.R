@@ -27,7 +27,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 weather_data_path <- file.path(".", "data", "weather_validation_data")
 snow_summary_path <- file.path(weather_data_path, "snow_summary")
 weather_file_path <- file.path(weather_data_path, "climate-daily.csv")
-snow_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_snow_baseline_feb23") 
+snow_run_path <- file.path(".", "raven-runs", "Baseline3-mar22", "Runs", "Trapping_snow_baseline_mar22") 
 
 swe_list <- list.files(snow_run_path,
                        pattern = "SNOW",
@@ -71,7 +71,7 @@ sampled_auto_data <- auto_snow_data %>%
   group_by(year, month, LOCATION_NAME) %>%
   slice_sample(n = 1) %>%  # randomly select one row per group
   ungroup() %>%
-  select(-c(month, year))
+  dplyr::select(-c(month, year))
 
 # * important
 auto_snow_data <- sampled_auto_data
@@ -153,13 +153,13 @@ compare_LR_swe <- function(swe_list,
   file_id <- parts[9]
   
   raven_swe <- read.csv(swe_list, skip = 1) %>%# [mm] frozen snow depth (mm SWE : snow water equivalent)
-    select(-c("time", "X"))
+    dplyr::select(-c("time", "X"))
   raven_swe$day <- as.Date(raven_swe$day)
   hru_names_ordered <- c("GRANO_CREEK", "MISSION_CREEK","CARMI", "BIG_WHITE", "MCCHULLOCH_MANUAL")
   names(raven_swe)[2:length(names(raven_swe))] <- paste0(hru_names_ordered) 
   
   manual_snow_data <- manual_snow_data %>%
-    select(-c(SNOW_MSS_LOC_ID, STATUS))
+    dplyr::select(-c(SNOW_MSS_LOC_ID, STATUS))
   manual_snow_data$LOCATION_NAME <- manual_snow_data$LOCATION_NAME %>% 
     stringr::str_replace("Aberdeen Lake", "ABERDEEN") %>%
     stringr::str_replace("Monashee Pass", "MONASHEE") %>%
@@ -171,7 +171,7 @@ compare_LR_swe <- function(swe_list,
     stringr::str_replace("Vaseux Creek", "VASEAUX")
   
   auto_snow_data <- auto_snow_data %>%
-    select(-c(OBJECT_ID, STATUS))
+    dplyr::select(-c(OBJECT_ID, STATUS))
   auto_snow_data$LOCATION_NAME <- auto_snow_data$LOCATION_NAME %>% 
     stringr::str_replace("Grano Creek", "GRANO_CREEK") %>%
     stringr::str_replace("Mission Creek", "MISSION_CREEK") %>%
@@ -223,7 +223,7 @@ snow_year_plot <- function(snow_file_path, all_snow_data, model_run){
   
   # read raven swe 
   raven_swe <- read.csv(snow_file_path, skip = 1) %>% # [mm] frozen snow depth (mm SWE : snow water equivalent)
-    select(-c("time", "X"))
+    dplyr::select(-c("time", "X"))
   raven_swe$day <- as.Date(raven_swe$day)
   hru_names_ordered <- c("GRANO_CREEK", "MISSION_CREEK","CARMI", "BIG_WHITE", "MCCHULLOCH_MANUAL")
   names(raven_swe)[2:length(names(raven_swe))] <- paste0(hru_names_ordered) 
@@ -316,16 +316,4 @@ snow_year_plot <- function(snow_file_path, all_snow_data, model_run){
     geom_line() +
     geom_ribbon(aes(ymin = ymin, ymax = ymax), alpha = 0.2, color = NA) +
     facet_wrap(~ LOCATION_NAME, labeller = labeller(LOCATION_NAME = station_labels)) +
-    labs(x = "Month (Aug–Jul)", y = "SWE (mm)", color = "", fill = "") +
-    theme_minimal() +
-    scale_x_discrete(breaks = c("Oct", "Jan", "Apr", "Jul")) + 
-    scale_color_manual(values = c("Modelled" = "darkblue", "Measured" = "orange")) +
-    scale_fill_manual(values = c("Modelled" = "darkblue", "Measured" = "orange")) +
-    theme(
-      axis.text.x = element_text(angle = 0, hjust = 1),
-      legend.position = c(0.86, 0.09),        # x, y position in normalized plot coordinates
-      legend.justification = c("right", "bottom"), 
-    )
-  
-  return(snow_plot)
-}
+    labs(x = "Month (Augb

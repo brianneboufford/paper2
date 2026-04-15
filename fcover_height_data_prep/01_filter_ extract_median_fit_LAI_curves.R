@@ -3,7 +3,7 @@
 # 
 # february 13, 2026
 # last updated february 19, 2026 to have more filtering on LAI values - removing physically unrealistic values
-#
+# updated again mar 22 with new adjusted LAI 
 # ------------------------------------------------------------------------------
 
 # library 
@@ -22,7 +22,7 @@ library(ggplot2)
 
 # fcover, veg height, and LAI
 veg_params_path <- file.path(".", "data", "forest_params_by_age", 
-                             "sampled_veg_params_byLAI_GRP_2015_2021_feb19.csv") # was feb 13 # can also try with all of the data instead
+                             "sampled_veg_params_byLAI_GRP_2015_2021_mar22.csv") # was feb 19 # can also try with all of the data instead
 
 zone_path <- file.path(".", "data", "src", "ntems", "zone_key.csv")
 
@@ -327,9 +327,8 @@ pred_df$age_class <- stringr::str_replace(pred_df$age_class, "_g1", "")
 pred_df <- pred_df %>% 
   mutate(lai_grp = factor(lai_grp, 
                        levels = c("g1", "g0"), 
-                       labels = c(expression(Elevation>=z[cp]),
-                                  expression(Elevation<z[cp])))) 
-
+                       labels = c(expression("Low Productivity"),
+                                  expression("High Productivity")))) 
 pred_df <- pred_df %>%
   mutate(age_class = factor(age_class,
                             levels = c("D", "R1", "R2", "R3", "R4", "R5", "R6",
@@ -359,31 +358,46 @@ ggplot() +
   theme_minimal() +
   theme(legend.position = "bottom")
 
-lai_plot <- ggplot(pred_df, aes(x = month_num, y = lai_fit, group = age_class)) +
-  geom_line() +
-  facet_grid(
-    lai_grp ~ age_class,
+lai_plot <- ggplot(pred_df, aes(x = month_num, y = lai_fit, 
+                                colour = lai_grp,
+                                linetype = lai_grp,
+                                shape = lai_grp)) +
+  geom_line(linewidth = 0.7) +
+  #geom_point() + 
+  facet_wrap(
+    ~ age_class,
     scales = "free_x",
-    space  = "free_x",
-    labeller = as_labeller(label_parsed)
+    labeller = as_labeller(label_parsed), 
+    nrow = 2
   ) +
+  scale_colour_manual(values = c("High Productivity" = "black", "Low Productivity" = "black")) +
+  scale_linetype_manual(values = c("High Productivity" = "solid", "Low Productivity" = "dashed")) +
+  scale_shape_manual(values = c("Low Productivity" = 16, "High Productivity" = 1)) +  # 16 = filled, 1 = open
   scale_x_continuous(
-    breaks = c(1, 4, 7),
-    labels = c("M", "A", "W")
+    breaks = c(1, 2, 3, 4, 5, 6, 7),
+    labels = c("May", "June", "July", "Aug", "Sept", "Oct", "Winter")
   ) +
   labs(
     x = "Month",
-    y = "LAI"
+    y = "LAI",
+    colour = NULL,
+    linetype = NULL,
+    shape = NULL
   ) +
   theme_bw() + 
-  theme(strip.background = element_rect("NA"))
+  theme(
+    strip.background = element_rect(fill = NA),
+    axis.text.x = element_text(angle = 90, hjust = 1),
+    legend.position = c(1.0, 0.25),
+    legend.justification = c(1, 0)
+  )
   
 ggsave(lai_plot, 
-       filename = file.path(fig_path, "fitted_lai_mar16.png"),
+       filename = file.path(fig_path, "fitted_lai_mar24.png"),
        dpi = 1200, 
        units = "in", 
-       width = 7,
-       height = 3)
+       width = 9,
+       height = 5)
 
 # ------------------------------------------------------------------------------
 # final estimates 
@@ -400,13 +414,45 @@ pred_data_final <- lai_models %>%
   unnest(c(newdata, preds))
 
 pred_df_final <- pred_data_final %>% 
-  select(c("age_class", "lai_grp", "preds", "month_num"))
+  dplyr::select(c("age_class", "lai_grp", "preds", "month_num"))
 
 names(pred_df_final) <- c("age_class", "lai_grp", "lai", "month_num")
 
 write.csv(pred_df_final, 
-          file.path(result_path, "median_LAI_ALS_ELEV_recovery_feb19.csv"),
+          file.path(result_path, "median_LAI_ALS_ELEV_recovery_mar22.csv"),
           row.names = FALSE)
+
+# ------------------------------------------------------------------------------
+# metrics for paper
+# ------------------------------------------------------------------------------
+
+july_peak_g0 <- pred_df_final$lai[pred_df_final$age_class == "M_g0" & pred_df_final$month_num == 3]
+july_peak_g1 <- pred_df_final$lai[pred_df_final$age_class == "M_g1" & pred_df_final$month_num == 3]
+
+winter_g0 <- pred_df_final$lai[pred_df_final$age_class == "M_g0" & pred_df_final$month_num == 7]
+winter_g1 <- pred_df_final$lai[pred_df_final$age_class == "M_g1" & pred_df_final$month_num == 7]
+
+# subset to high and low groups
+pred_df_final_0 <- pred_df_final[pred_df_final$lai_grp == "g0", ]
+pred_df_final_1 <- pred_df_final[pred_df_final$lai_grp == "g1", ]
+
+pred_df_final_0$compare_to_mat <- round(pred_df_final_0$lai/july_peak_g0*100, 2)
+pred_df_final_1$compare_to_mat <- round(pred_df_final_1$lai/july_peak_g1*100, 2)
+
+pred_df_final_0$compare_to_mat_wint <- round(pred_df_final_0$lai/winter_g0*100, 2)
+pred_df_final_1$compare_to_mat_wint <- round(pred_df_final_1$lai/winter_g1*100, 2)
+
+# get the maximum LAI and the associated recovery class
+max_recovery_class_g0 <- pred_df_final_0[which.max(pred_df_final_0$lai), ]
+max_recovery_class_g1 <- pred_df_final_1[which.max(pred_df_final_1$lai), ]
+
+# after 5 years
+five_0 <- pred_df_final_0[pred_df_final_0$age_class == "D_g0", ]
+five_1 <- pred_df_final_1[pred_df_final_1$age_class == "D_g1", ]
+
+# after 10 years 
+twen_0 <- pred_df_final_0[pred_df_final_0$age_class == "R3_g0", ]
+twen_1 <- pred_df_final_1[pred_df_final_1$age_class == "R3_g1", ]
 
 # ------------------------------------------------------------------------------
 # functions

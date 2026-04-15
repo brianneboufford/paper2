@@ -4,6 +4,7 @@
 # 
 # 
 # December 4, 2025
+# updated march 24, 2026
 # ------------------------------------------------------------------------------
 
 # packages 
@@ -27,7 +28,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------ 
 
-hru_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_HRU_baseline_Feb20") # was Dec 10
+hru_run_path <- file.path(".", "raven-runs", "Baseline3-mar22", "Runs", "Trapping_HRU_baseline_Mar22") # was Dec 10
 fig_path <- file.path(".", "data", "figs", "baseline_model_calibration")
 
 # list of hydrographs
@@ -55,7 +56,7 @@ hydroplot_baseline <- ggplot() +
         legend.key = element_rect(fill = "white", colour = NA))
 
 ggsave(hydroplot_baseline,
-       filename = file.path(fig_path, "daily_hydrograph_baseline_paper2_feb24.png"),
+       filename = file.path(fig_path, "daily_hydrograph_baseline_paper2_mar24.png"),
        units = "in",
        width = 10,
        height = 4)

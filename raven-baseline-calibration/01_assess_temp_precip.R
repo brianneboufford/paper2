@@ -27,7 +27,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 weather_data_path <- file.path(".", "data", "weather_validation_data")
 snow_summary_path <- file.path(weather_data_path, "snow_summary")
 weather_file_path <- file.path(weather_data_path, "climate-daily.csv")
-weather_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_weather_baseline_feb23")
+weather_run_path <- file.path(".", "raven-runs", "Baseline3-mar22", "Runs", "Trapping_weather_baseline_mar22")
 fig_path <- file.path("data", "figs", "baseline_model_calibration")
 
 # list of temp 
@@ -64,7 +64,7 @@ hru_names_ordered <- c("BIG WHITE", "BIG WHITE MTN LODGE","MCCULLOCH", "BEAVERDE
 
 # daily average precip 
 raven_precip <- read.csv(precip_list, skip = 1) %>% # from raven manual: rain/snow precipitation rate over time step /data interval [mm/d]
-  select(-c("time", "X"))
+  dplyr::select(-c("time", "X"))
 raven_precip$day <- raven_precip$day %>% as.Date()
 
 # fix column names on Raven files
@@ -86,8 +86,8 @@ raven_monthly <- raven_precip_long %>%
 names(raven_monthly) <- c("year_month", "STATION_NAME", "sum_precip_raven")
 
 # daily max temp average 
-raven_max_temp <- read.csv(temp_list, skip = 1) %>%# maximum air temperature over day (0:00-24:00)[ ◦C]
-  select(-c("time", "X"))
+raven_max_temp <- read.csv(temp_list, skip = 1) %>%# maximum air temperature over day (0:00-24:00)[ b&C]
+  dplyr::select(-c("time", "X"))
 raven_max_temp$day <- raven_max_temp$day %>% as.Date()
 
 # fix column names and convert to long format 
@@ -210,13 +210,13 @@ precip_plot <- ggplot(data=precip_df, aes(x=sum_precip_meas, y=sum_precip_raven,
             inherit.aes = FALSE, hjust = 1, vjust = 1, size = 4)
 
 ggsave(temp_plot,
-       filename = file.path(fig_path, paste0("temp_compare_feb23",".png")),
+       filename = file.path(fig_path, paste0("temp_compare_mar22",".png")),
        units = "in", 
        height = 4,
        width = 6)
 
 ggsave(precip_plot,
-       filename = file.path(fig_path, paste0("precip_compare_feb23", ".png")),
+       filename = file.path(fig_path, paste0("precip_compare_mar22", ".png")),
        units = "in", 
        height = 4,
        width = 6)
@@ -259,7 +259,7 @@ av_temp_plot <- ggplot(temp_long, aes(x = month_int, y = Mean, color = Type, fil
   )
 
 ggsave(av_temp_plot,
-       filename = file.path(fig_path, paste0("av_temp_compare_feb23", ".png")),
+       filename = file.path(fig_path, paste0("av_temp_compare_mar22", ".png")),
        units = "in", 
        height = 4,
        width = 6)
@@ -295,31 +295,4 @@ av_precip_plot <- ggplot(precip_long, aes(x = factor(month_int), y = Mean, fill 
     width = 0.2
   ) +
   facet_wrap(~ STATION_NAME) +
-  labs(x = "Month (Jan–Dec)", y = "Monthly Precip (mm)", fill = "") +
-  theme_minimal() +
-  scale_x_discrete(
-    breaks = c("1", "4", "7", "10"),
-    labels = c("Jan", "Apr", "Jul", "Oct")
-  ) +
-  scale_fill_manual(values = c("Modelled" = "darkblue", "Measured" = "orange"))# +
-# theme(
-#   axis.text.x = element_text(angle = 0, hjust = 0.5),  # center the label under month
-#   legend.position = c(0.86, 0.09),
-#   legend.justification = c("right", "bottom")
-# )
-
-ggsave(av_precip_plot,
-       filename = file.path(fig_path, paste0("av_precip_compare_feb23", ".png")),
-       units = "in", 
-       height = 4,
-       width = 6)
-
-av_together <- grid.arrange(av_temp_plot, av_precip_plot, ncol = 2, widths=c(2,3))
-ggsave(av_together,
-       filename = file.path(fig_path, paste0("av_precip_temp_compare_feb23", ".png")),
-       units = "in", 
-       height = 4,
-       width = 12)
-
-  
-
+  labs(x = "Month (Janb

@@ -24,7 +24,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------ 
 
-hru_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_hru_baseline_Feb20") 
+hru_run_path <- file.path(".", "raven-runs", "Baseline3-mar22", "Runs", "Trapping_hru_baseline_Mar22") 
 
 # list of hydrographs
 hydrograph_list <- list.files(hru_run_path, pattern="Hydrographs.csv", 

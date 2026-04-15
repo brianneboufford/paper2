@@ -2,6 +2,8 @@
 # fit S-curves to ALS-derived forest parameters 
 #
 # date: February 12, 2026 
+# update March 22, 2026 to use new LAI, height, and fcover
+# updated April 14th to fix forest param figure
 # ------------------------------------------------------------------------------
 
 # library 
@@ -27,7 +29,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # ------------------------------------------------------------------------------
 
 # fcover, veg height
-als_veg_params_path <- file.path(".", "data", "forest_params_by_age", "fc_height_2015_feb11.csv") # fcover and height
+als_veg_params_path <- file.path(".", "data", "forest_params_by_age", "fc_height_2015_mar22.csv") # fcover and height # was feb 11
 
 zone_path <- file.path(".", "data", "src", "ntems", "zone_key.csv")
 
@@ -246,7 +248,7 @@ age_seq_fc_g1 <- data.frame(
 
 age_seq_fc_g1$fc_fit <- predict(fit_fc_g1, newdata = age_seq_fc_g1)
 
-fc_g1_plot <-ggplot(avg_fc_g1, aes(age, mean_fc)) +
+fc_g1_plot <- ggplot(avg_fc_g1, aes(age, mean_fc)) +
   #geom_point(size = 2) +
   #eom_line(color = "grey60") +
   geom_line(
@@ -324,7 +326,7 @@ h_g1_plot <- ggplot(avg_height_g1, aes(age, mean_h)) +
     y = "Height (m)",
     title = ""
   ) +
-  ylim(c(0, 35)) +
+  ylim(c(0, 20)) +
   theme_minimal(14)
 
 summary(fit_h_g1)
@@ -387,7 +389,7 @@ h_g0_plot <- ggplot(avg_height_g0, aes(age, mean_h)) +
     y = "Height (m)",
     title = ""
   ) +
-  ylim(c(0, 35)) +
+  ylim(c(0, 20)) +
   theme_minimal(14)
 
 summary(fit_h_g0)
@@ -404,11 +406,129 @@ forest_plots <- plot_grid(fc_g0_plot, fc_g1_plot, h_g0_plot, h_g1_plot,
                           )
 
 ggsave(forest_plots, 
-       filename = file.path(fig_path, "fc_h_plots.png"),
+       filename = file.path(fig_path, "fc_h_plots_mar22.png"),
        dpi = 600, 
        units = "in", 
        width = 7, 
        height = 7)
+
+# ------------------------------------------------------------------------------
+# make new plot 
+# ------------------------------------------------------------------------------
+# forest cover 
+avg_fc_g0$prod <- "High"
+avg_fc_g1$prod <- "Low"
+age_seq_fc_g0$prod <- "High"
+age_seq_fc_g1$prod <- "Low"
+
+all_fc <- rbind(avg_fc_g0, avg_fc_g1)
+all_fc <- all_fc[all_fc$age < 65, ]
+all_fc_fit <- rbind(age_seq_fc_g0, age_seq_fc_g1)
+all_fc_fit <- all_fc_fit[all_fc_fit$age < 65, ]
+
+# height 
+avg_height_g0$prod <- "High"
+avg_height_g1$prod <- "Low"
+age_seq_h_g0$prod <- "High"
+age_seq_h_g1$prod <- "Low"
+
+all_h <- rbind(avg_height_g0, avg_height_g1)
+all_h <- all_h[all_h$age < 65, ]
+all_h_fit <- rbind(age_seq_h_g0, age_seq_h_g1)
+all_h_fit <- all_h_fit[all_h_fit$age < 65, ]
+
+fc_plot_highlow <- ggplot(all_fc, aes(age, mean_fc, colour = prod)) +
+  #geom_point(size = 2) +
+  #eom_line(color = "grey60") +
+  geom_line(
+    data = all_fc_fit,
+    aes(age, fc_fit, colour = prod),
+    linewidth = 1.2
+  ) +
+  geom_ribbon(
+    aes(ymin = Qlow, ymax = Qhigh, fill = prod),
+    alpha = 0.25,
+    colour = NA
+  ) +
+  scale_color_manual(values = c(
+    "High" = "#c51b7d",
+    "Low"  = "#4d9221"
+  )) +
+  scale_fill_manual(values = c(
+    "High" = "#c51b7d",
+    "Low"  = "#4d9221"
+  )) + 
+  geom_vline(
+    xintercept = seq(5, 55, by = 5),
+    linetype = "dashed",
+    color = "grey50"
+  ) +  
+  labs(
+    x = "Age",
+    y = "Forest Cover (%)",
+    colour = "Productivity Region",
+    fill = "Productivity Region",
+    title = ""
+  ) +
+  scale_x_continuous(breaks = seq(0, max(all_fc$age , na.rm = TRUE), by = 5)) +
+  ylim(c(0, 100)) +
+  theme_minimal(12) + 
+  theme(legend.position = "none")
+
+
+h_plot_highlow <- ggplot(all_h, aes(age, mean_h, color = prod)) +
+  # geom_point(size = 2) +
+  # geom_line(color = "grey60") +
+  geom_ribbon(
+    aes(ymin = Qlow, ymax = Qhigh, fill = prod),
+    alpha = 0.25,
+    colour = NA
+  ) +
+  geom_line(
+    data = all_h_fit,
+    aes(age, fc_fit, colour = prod),
+    linewidth = 1.2
+  ) +
+  scale_color_manual(values = c(
+    "High" = "#c51b7d",
+    "Low"  = "#4d9221"
+  )) +
+  scale_fill_manual(values = c(
+    "High" = "#c51b7d",
+    "Low"  = "#4d9221"
+  )) + 
+  geom_vline(
+    xintercept = seq(5 , 55, by = 5),
+    linetype = "dashed",
+    color = "grey50"
+  ) + 
+  labs(
+    x = "Age",
+    y = "Height (m)",
+    colour = "Productivity Region",
+    fill = "Productivity Region",
+    title = ""
+  ) +
+  scale_x_continuous(breaks = seq(0, max(all_h$age, na.rm = TRUE), by = 5)) + 
+  ylim(c(0, 20)) +
+  theme_minimal(12) + 
+  theme(legend.position = "bottom")
+
+h_plot_highlow
+fc_plot_highlow
+
+hilow_plots <- plot_grid(fc_plot_highlow, h_plot_highlow,
+                          nrow = 2, 
+                          align  = "hv"
+)
+
+ggsave(hilow_plots, 
+       filename = file.path(fig_path, "fc_h_plots_april14.png"),
+       dpi = 600, 
+       units = "in", 
+       width = 5, 
+       height = 8)
+
 
 # ------------------------------------------------------------------------------
 # get summary stats for results section 
@@ -417,9 +537,18 @@ fit_fc_g0
 fit_fc_g1
 fit_h_g0
 fit_h_g1
+
+age_seq_h_g1$compare_asym <- age_seq_h_g1/10.00
+age_seq_h_g0$compare_asym <- age_seq_h_g0/11.7670
+
+age_seq_fc_g1$compare_asym <- age_seq_fc_g1/69.433
+age_seq_fc_g0$compare_asym <- age_seq_fc_g0/75.614
+
 age_seq_fc_g0
 age_seq_fc_g1
 
+age_seq_h_g0
+age_seq_h_g1
 # ------------------------------------------------------------------------------
 # join all fit data and turn into useful CSV format for raven input file 
 # development
@@ -464,7 +593,7 @@ h_fc_grouped <- h_fc_data %>%
 # -------
 
 write.csv(h_fc_grouped, 
-          file.path(result_path, "height_fcover_med_Scurve_feb17.csv"),
+          file.path(result_path, "height_fcover_med_Scurve_mar22.csv"),
           row.names = FALSE)
 
 # ------------------------------------------------------------------------------

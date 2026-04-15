@@ -29,10 +29,10 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------ 
 
-hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19", "Runs")
+hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19 - Copy", "Runs")
 outpath <- file.path(".", "data", "streamflow_analysis")
 
-fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Feb20")
+fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Mar22")
 
 # list of hydrographs
 hydrograph_list <- list.files(hru_run_path, pattern="Hydrographs.csv", 
@@ -47,7 +47,8 @@ results_pf <- lapply(hydrograph_list,
                   get_peak_flows_data) %>%
   do.call(rbind, .)
 
-results_pf_keep <- results_pf
+#results_pf_keep <- results_pf
+results_pf <- results_pf_keep
 
 results_ff <- lapply(hydrograph_list, 
                      get_flood_freq_data) %>% 
@@ -62,7 +63,7 @@ results_cf <- lapply(hydrograph_list,
 # ------------------------------------------------------------------------------
 
 results_pf <- results_pf %>% 
-  subset(!Year %in% c(1981, 2023))
+  subset(!Year %in% c(1980, 2023))
 
 # box pot for Max_1_Day, Max_1_Day_Doy and Max_7Day, Max_7_Day_Doy 
 pf_af <- results_pf[results_pf$run_name == "all_forest", ]
@@ -91,14 +92,14 @@ pf_no_af <- pf_no_af %>%
   mutate(scenario = factor(sim_name, 
                            levels = c("low 10%", "low 15%", "low 20%", "low 30%", 
                                       "high 10%", "high 15%", "high 20%", "high 30%"), 
-                           labels = c(expression(z<z[p50]:10*'%'), 
-                                      expression(z<z[p50]:15*'%'), 
-                                      expression(z<z[p50]:20*'%'), 
-                                      expression(z<z[p50]:30*'%'), 
-                                      expression(z>=z[p50]:10*'%'),
-                                      expression(z>=z[p50]:15*'%'), 
-                                      expression(z>=z[p50]:20*'%'), 
-                                      expression(z>=z[p50]:30*'%'))))
+                           labels = c(expression("Low Elevation":10*'%'), 
+                                      expression("Low Elevation":15*'%'), 
+                                      expression("Low Elevation":20*'%'), 
+                                      expression("Low Elevation":30*'%'), 
+                                      expression("High Elevation":10*'%'),
+                                      expression("High Elevation":15*'%'), 
+                                      expression("High Elevation":20*'%'), 
+                                      expression("High Elevation":30*'%'))))
 
 max_peak <- ggplot(data = pf_no_af, aes(x = scenario, y = Max_1_Day, fill = recovery)) +
   geom_boxplot(alpha = 0.8, outlier.alpha = 0.05) +
@@ -153,7 +154,7 @@ combo_plot <- plot_grid(max_peak, max_day,
                         ncol=1, align = "v", rel_heights = c(1, 1.5))
 
 ggsave(max_day,
-       filename = file.path(fig_path, "Peak_DoY_mar16.png"),
+       filename = file.path(fig_path, "Peak_DoY_mar23.png"),
        units = "in",
        dpi = 300,
        width = 6,
@@ -246,14 +247,14 @@ cf_no_af <- cf_no_af %>%
   mutate(scenario = factor(sim_name, 
                            levels = c("high 10%", "high 15%", "high 20%", "high 30%", 
                                       "low 10%", "low 15%", "low 20%", "low 30%"), 
-                           labels = c(expression(z>=z[p50]:10*'%'),
-                                      expression(z>=z[p50]:15*'%'), 
-                                      expression(z>=z[p50]:20*'%'), 
-                                      expression(z>=z[p50]:30*'%'), 
-                                      expression(z<z[p50]:10*'%'), 
-                                      expression(z<z[p50]:15*'%'), 
-                                      expression(z<z[p50]:20*'%'), 
-                                      expression(z<z[p50]:30*'%'))))
+                           labels = c(expression("High Elevation":10*'%'),
+                                      expression("High Elevation":15*'%'), 
+                                      expression("High Elevation":20*'%'), 
+                                      expression("High Elevation":30*'%'), 
+                                      expression("Low Elevation":10*'%'), 
+                                      expression("Low Elevation":15*'%'), 
+                                      expression("Low Elevation":20*'%'), 
+                                      expression("Low Elevation":30*'%'))))
 
 cf_no_af_apr_jul <- cf_no_af[cf_no_af$Month %in% c("Apr", "May", "Jun", "Jul", "Aug", "Dec"), ]
 
@@ -341,7 +342,7 @@ cumulative_plot <- ggplot(cf_no_af_apr_jul, aes(x = Month, y = Mean)) +
   
   theme_bw(14) +
   theme(
-    axis.text = element_text(size = 12),
+    axis.text = element_text(size = 10),
     axis.title = element_text(size = 12),
     strip.background = element_rect(NA),
     strip.text = element_text(size = 12),
@@ -351,11 +352,29 @@ cumulative_plot <- ggplot(cf_no_af_apr_jul, aes(x = Month, y = Mean)) +
   guides(fill = guide_legend(nrow = 2))
   
 ggsave(cumulative_plot,
-       filename = file.path(fig_path, "cumulative_flow_plot_mar16.png"),
+       filename = file.path(fig_path, "cumulative_flow_plot_mar24.png"),
        units = "in",
        dpi = 300,
        width = 9,
        height = 7)
+
+# -----------------------------------------------
+# results for paper 2 Fig 8 - Mean cumulative flow
+# -----------------------------------------------
+apr_cf <- results_cf[results_cf$Month == "Apr", ]
+tot_cf <- results_cf[results_cf$Month == "Dec", ]
+
+apr_af_mean <- apr_cf$Mean[apr_cf$run_name == "all_forest"]
+tot_af_mean <- tot_cf$Mean[tot_cf$run_name == "all_forest"]
+
+apr_sim <- apr_cf[apr_cf$run_name != "all_forest", ]
+tot_sim <- tot_cf[tot_cf$run_name != "all_forest", ]
+
+apr_sim$per_change_Mean <- round((apr_sim$Mean/apr_af_mean - 1)*100, 2)
+tot_sim$per_change_Mean <- round((tot_sim$Mean/tot_af_mean - 1)*100, 2)
+
+# just looked at these tables ^ 
+
 # ------------------------------------------------------------------------------
 # generate metrics and save 
 # ------------------------------------------------------------------------------ 
@@ -365,7 +384,7 @@ results <- lapply(hydrograph_list,
   do.call(rbind, .)
 
 write.csv(results, 
-          file.path(outpath, "flow_metrics_mar10.csv"),
+          file.path(outpath, "flow_metrics_mar24.csv"),
           row.names = FALSE)
 
 # ------------------------------------------------------------------------------

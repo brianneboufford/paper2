@@ -8,7 +8,7 @@
 # get fCOVER by age and pull out alpine, wetland, and shrub classes 
 # 
 # february 13, 2025
-# updated march 20th: using 1-m chm instead
+# updated march 22nd: using 1-m chm and new LAI, fcover
 # ------------------------------------------------------------------------------
 
 # library 
@@ -40,7 +40,7 @@ if(TRUE){
   
   # adjusted fcover and LAI from leaf data 
   fc_leaf_path <- file.path(".", "data", "fCOVER_clean", "fCOVER_stacked", "fcover_stacked_TC_area.tif")
-  lai_leaf_path <- file.path(".", "data", "LAI", "adjusted_hls_lai.tif")
+  lai_leaf_path <- file.path(".", "data", "src", "LAI", "adjusted_hls_lai_mar22.tif") # mar 2022 update
   
   # chm height
   h_chm_path <- file.path(".", "data", "src", "lidar_derived", "chm_1m.tif")
@@ -58,10 +58,10 @@ if(TRUE){
   lcy_poly_path <- file.path(".", "data", "src", "ntems", "disturbance_year_polygon.shp")
   
   # 2014 chm 
-  chm_path <- file.path(".", "data", "src", "lidar_derived", "chm_1m.tif")
+  chm_path <- file.path(".", "data", "src", "lidar_derived", "chm_1m.tif") # mar 22 update
   
   # 2014 standard metrics 
-  std_metrics_path <- file.path(".", "data", "src", "lidar_derived", "standard_metrics.tif")
+  std_metrics_path <- file.path(".", "data", "src", "lidar_derived", "std_metrics_mar20.tif") # mar 22 update
   
   
 }
@@ -121,11 +121,6 @@ if(TRUE){
   fc <- rast(std_metrics_path) %>% 
     subset("pzabove2") %>% 
     terra::resample(age_combined, method='max')
-  
-  # using this
-  fc <- rast(std_metrics_path) %>% 
-    subset("pzabove2") %>% 
-    terra::resample(age_combined, method='average')
   
   hru_rast <- rasterize(hru_2023, age_combined, field = "frst_cl")
   
@@ -332,7 +327,7 @@ full_df <- join_fcover_age(age_combined = age_combined,
 
 # write fully merged data 
 write.csv(full_df,
-          file.path(output_prod_path, "veg_params_2015_2021_allmonths_mar20.csv"), # much smaller file size because downsampled to 
+          file.path(output_prod_path, "veg_params_2015_2021_allmonths_mar22.csv"), # much smaller file size because downsampled to 
           row.names = FALSE)
 # ------------------------------------------------------------------------------
 # try sampling with limiting by same disturbance 
@@ -442,7 +437,7 @@ sampled_frst_n <- sampled_frst_data %>%
 ########################################################
 # write out sampled forested data (10000 points per class)
 write.csv(sampled_frst_data,
-          file.path(output_prod_path, "sampled_veg_params_byLAI_GRP_2015_2021_mar20.csv"),
+          file.path(output_prod_path, "sampled_veg_params_byLAI_GRP_2015_2021_mar22.csv"),
           row.names = FALSE)
 
 
@@ -456,5 +451,5 @@ sampled_non_frst_df <- sampled_df[!sampled_df$frst_cl %in% c("MS", "ESSF", "IDF"
 
 # write 
 write.csv(sampled_non_frst_df,
-          file.path(output_prod_path, "sampled_veg_params_nonfrst_2015_2021_mar20.csv"),
+          file.path(output_prod_path, "sampled_veg_params_nonfrst_2015_2021_mar22.csv"),
           row.names = FALSE)

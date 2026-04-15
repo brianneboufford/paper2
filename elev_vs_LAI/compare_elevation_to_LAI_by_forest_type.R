@@ -27,7 +27,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths
 # ------------------------------------------------------------------------------
 data_path <- file.path(".", "data")
-lai_path <- file.path(data_path, "src", "LAI", "adjusted_hls_lai.tif")
+lai_path <- file.path(data_path, "src", "LAI", "adjusted_hls_lai_mar22.tif")
 bec_path <- file.path(data_path, "src", "BEC", "bec_zones_tc.shp")
 dem_path <- file.path(data_path, "src", "lidar_derived", "dem.tif")
 catchment_path <- file.path(data_path, "src", "TC_catchment", "catchments.shp")

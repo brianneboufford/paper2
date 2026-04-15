@@ -22,10 +22,10 @@ project_path <- file.path("C:", "Users", "blbouf", "Sync", "Paper2")
 setwd(project_path)
 
 # raven run  path
-raven_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19")
+raven_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19 - Copy")
 
-calls_file <- file.path(raven_run_path, "Trapping_dist_scen_calls_feb20.txt")
-calls_file_new <- file.path(raven_run_path, "Trapping_dist_scen_calls_feb20.txt")
+calls_file <- file.path(raven_run_path, "Trapping_dist_scen_calls_mar22.txt")
+calls_file_new <- file.path(raven_run_path, "Trapping_dist_scen_calls_mar22.txt")
 
 # ---- READ FIRST LINE ----
 lines <- readLines(calls_file)

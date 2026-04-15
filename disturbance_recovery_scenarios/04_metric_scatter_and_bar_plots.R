@@ -4,6 +4,7 @@
 # 
 # 
 # February 25, 2026
+# updated march 22, 2026
 # ------------------------------------------------------------------------------
 
 # packages 
@@ -29,10 +30,10 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # paths 
 # ------------------------------------------------------------------------------ 
 
-hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19", "Runs")
+hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19 - Copy", "Runs")
 outpath <- file.path(".", "data", "streamflow_analysis")
 
-fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Feb20")
+fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Mar22")
 
 # list of hydrographs
 hydrograph_list <- list.files(hru_run_path, pattern="Hydrographs.csv", 
@@ -51,8 +52,13 @@ write.csv(results,
           file.path(outpath, "flow_metrics_feb25.csv"),
           row.names = FALSE)
 
-results <- read.csv(file.path(outpath, "flow_metrics_mar10.csv"))
+results <- read.csv(file.path(outpath, "flow_metrics_mar24.csv"))
 
+# --------------------------------
+# results described in paper 
+# --------------------------------
+# done in excel sheet for ease
+ 
 # ------------------------------------------------------------------------------
 # make date of peak flow and peak flow box plot 
 # ------------------------------------------------------------------------------
@@ -66,12 +72,13 @@ sims_list <- sims_list[!grepl("_40_", sims_list)]
 sims_data <- lapply(sims_list, 
                     prep_model_data_sims) %>%
   do.call(rbind,.)
+
 sims_data <- sims_data[sims_data$Type == "Simulated", ]
 
 sims_data$year <- year(as.Date(sims_data$date))
 
 sims_data <- sims_data %>% 
-  subset(!year %in% c(1981, 2023))
+  subset(!year %in% c(1980, 2023))
 
 sims_data_ann <- sims_data %>% 
   group_by(year, Site, recovery) %>%
@@ -134,6 +141,8 @@ date_peak_flow_box <- ggplot(data = sims_data_ann, aes(x = Site, y = date_peak_f
   theme(axis.text = element_text(size = 12), 
         axis.title = element_text(size = 12), 
         legend.position = "right")
+
+
 # ------------------------------------------------------------------------------
 # make plot 
 # ------------------------------------------------------------------------------ 
@@ -163,14 +172,14 @@ df <- df %>%
   mutate(scenario = factor(scenario, 
                        levels = c("high_10", "high_15", "high_20", "high_30", 
                                   "low_10", "low_15", "low_20", "low_30"), 
-                       labels = c(expression(z>=z[p50]:10*'%'),
-                                  expression(z>=z[p50]:15*'%'), 
-                                  expression(z>=z[p50]:20*'%'), 
-                                  expression(z>=z[p50]:30*'%'), 
-                                  expression(z<z[p50]:10*'%'), 
-                                  expression(z<z[p50]:15*'%'), 
-                                  expression(z<z[p50]:20*'%'), 
-                                  expression(z<z[p50]:30*'%'))))
+                       labels = c(expression("High z":10*'%'),
+                                  expression("High z":15*'%'), 
+                                  expression("High z":20*'%'), 
+                                  expression("High z":30*'%'), 
+                                  expression("Low z":10*'%'), 
+                                  expression("Low z":15*'%'), 
+                                  expression("Low z":20*'%'), 
+                                  expression("Low z":30*'%'))))
 
 df_flood <- df[df$metrics %in% c("1Q2", "1Q5", "1Q20", "mean_annual_flow"), ] %>% 
   mutate(metrics = factor(metrics, 
@@ -224,12 +233,77 @@ Qbar <- ggplot(df_flood, aes(x = factor(yrs), y = value_diff/values_af*100, fill
   guides(fill = guide_legend(nrow = 1))
 
 ggsave(Qbar, 
-       filename = file.path(fig_path, "Qmetric_barplot_mar16.png"),
+       filename = file.path(fig_path, "Qmetric_barplot_mar24.png"),
        units = "in",
-       width = 9,
+       width = 10,
        height = 6, 
        dpi = 300)
 
+# ------------------------------------------------------------------------------
+# make line and point plot April 9, 2026
+# ------------------------------------------------------------------------------
+
+df_flood$elev <-str_split(df_flood$run, pattern = "_", simplify = TRUE)[, 1]
+df_flood$dist_size <-str_split(df_flood$run, pattern = "_", simplify = TRUE)[, 2]
+df_flood$yrs_str <-str_split(df_flood$run, pattern = "_", simplify = TRUE)[, 3]
+
+df_flood$elev <- dplyr::recode(df_flood$elev,
+                        "high" = "High",
+                        "low"  = "Low")
+
+Qline <- ggplot(df_flood, 
+                aes(x = yrs, 
+                    y = value_diff/values_af*100, 
+                    group = interaction(scenario, dist_size, elev),
+                    color = elev,
+                    shape = dist_size)) +
+  geom_line(linewidth = 0.6) +
+  geom_point(size = 3) +
+  facet_wrap(~ metrics, 
+             labeller = as_labeller(label_parsed)) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") + 
+  scale_shape_manual(values = c(
+    "10" = 1,   # open circle
+    "15" = 2,   # open triangle
+    "20" = 0,   # open square
+    "30" = 8    # star
+  )) +
+  scale_color_manual(values = c(
+    "High" = "#c51b7d",
+    "Low"  = "#4d9221"
+  )) +
+  scale_y_continuous(breaks = seq(0, 25, 5)) + 
+  labs(
+    x = "Recovery Stage",
+    y = expression("Difference from All Forested (%)"),
+    color = "Elevation Region",
+    shape = "Disturbance Scenario (%)"
+  ) +
+  theme_bw(14) +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1),
+    axis.text.y = element_text(size = 10),
+    strip.text = element_text(size = 10),
+    strip.background = element_rect(fill = NA),
+    axis.title = element_text(size = 12),
+    legend.position = "bottom", 
+    legend.text = element_text(size = 12), 
+    legend.title = element_text(size = 12)
+  ) +
+  guides(
+    color = guide_legend(override.aes = list(shape = NA, linewidth = 1))
+  )
+
+ggsave(Qline, 
+       filename = file.path(fig_path, "Qmetric_lineplot_april9.png"),
+       units = "in",
+       width = 8,
+       height = 10, 
+       dpi = 300)
+
+# ------------------------------------------------------------------------------
+# old plots 
+# ------------------------------------------------------------------------------
 ggplot(df[df$metrics %in% c("1Q2", "1Q20", "mean_annual_flow"), ], aes(x = factor(yrs), y = scenario, size = value_diff, colour = value_diff)) +
   geom_point(alpha = 0.6) +
   facet_grid(~metrics, scales = "free_y") +
@@ -263,7 +337,7 @@ metric_time_series_plot <- function(df_q20, metric_name, fig_path){
   scenarios <- df_q20 %>%
     distinct(scenario) %>%
     mutate(
-      scenario_value = parse_number(scenario),
+      scenario_value = readr::parse_number(scenario),
       group = ifelse(grepl("high", scenario), "high", "low")
     )
   
@@ -515,3 +589,4 @@ prep_model_data_af <- function(df, data_name){
   df$Site <- data_name
   return(df)
 } 
+

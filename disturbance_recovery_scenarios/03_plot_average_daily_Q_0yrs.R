@@ -22,7 +22,7 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 # ------------------------------------------------------------------------------ 
 
 hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios", "Runs")
-fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Feb20")
+fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Mar22")
 hru_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_HRU_baseline_Feb20") # was dec 10
 hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19", "Runs")
 # list of hydrographs
@@ -42,6 +42,9 @@ hydroaf <- prep_model_data_af(hydrograph_list_af, "af") %>% rbind()
 # prep all other data
 hydro_data <- lapply(hydrograph_0yrs_list, prep_model_data_sims) %>% 
   do.call(rbind, .)
+
+Qup = 0.9
+Qlow = 0.1
 
 # group data and calculate quantiles
 sim_data_grouped <- hydro_data %>%
@@ -74,14 +77,14 @@ sim_data_grouped <- sim_data_grouped %>%
   mutate(Site = factor(Site, 
                        levels = c("high 10%", "high 15%", "high 20%", "high 30%", 
                                   "low 10%", "low 15%", "low 20%", "low 30%"), 
-                       labels = c(expression(Elevation>=~z[p50]:~10*'%'),
-                                  expression(Elevation>=~z[p50]:~15*'%'), 
-                                  expression(Elevation>=~z[p50]:~20*'%'), 
-                                  expression(Elevation>=~z[p50]:~30*'%'), 
-                                  expression(Elevation<~z[p50]:~10*'%'), 
-                                  expression(Elevation<~z[p50]:~15*'%'), 
-                                  expression(Elevation<~z[p50]:~20*'%'), 
-                                  expression(Elevation<~z[p50]:~30*'%'))))
+                       labels = c(expression("High Elevation":~10*'%'),
+                                  expression("High Elevation":~15*'%'), 
+                                  expression("High Elevation":~20*'%'), 
+                                  expression("High Elevation":~30*'%'), 
+                                  expression("Low Elevation":~10*'%'), 
+                                  expression("Low Elevation":~15*'%'), 
+                                  expression("Low Elevation":~20*'%'), 
+                                  expression("Low Elevation":~30*'%'))))
 
 av_plot <- ggplot(
   data = sim_data_grouped,
@@ -152,16 +155,32 @@ av_plot <- ggplot(
 av_plot
 
 ggsave(av_plot,
-       filename = file.path(fig_path, "av_daily_Q_0yrs_mar16.png"),
+       filename = file.path(fig_path, "av_daily_Q_0yrs_mar24.png"),
        units = "in",
        dpi = 300,
        width = 8, 
        height = 5)
 
-  
 
-# HERE facet plot by Site for hydro data and to each plot add the AF hydro data !!
+# ---------------------------------------------------------------
+# results for paper 2 Fig 7
+#----------------------------------------------------------------
+sdg <- sim_data_grouped %>% as.data.frame()
+af <- af_data_grouped %>% as.data.frame()
+af_max <- max(af$Value)
 
+h30_max <- max(sdg$Value[sdg$Site == expression("High Elevation":~30 * "%")])
+
+l30_max <- max(sdg$Value[sdg$Site == expression("Low Elevation":~30 * "%")])
+
+h10_max <- max(sdg$Value[sdg$Site == expression("High Elevation":~10 * "%")])
+
+l10_max <- max(sdg$Value[sdg$Site == expression("Low Elevation":~10 * "%")])
+
+round(h30_max/af_max*100, 2)
+round(l30_max/af_max*100, 2)
+round(h10_max/af_max*100, 2)
+round(l10_max/af_max*100, 2)
 # ------------------------------------------------------------------------------
 # functions 
 # ------------------------------------------------------------------------------

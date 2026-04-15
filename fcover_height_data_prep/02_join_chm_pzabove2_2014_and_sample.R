@@ -3,7 +3,7 @@
 # 2014 age data has quite a few inconsistencies in the ESSF forested area 
 # 
 # Date created: Feburary 9, 2025
-#
+# updated March 22 for new fcover and height
 # ------------------------------------------------------------------------------
 
 # library 
@@ -31,10 +31,10 @@ write_interm_data <- TRUE
 if(TRUE){
   
   #fc_path <- file.path(".", "data", "src", "ntems", "percentage_first_returns_above_2m")
-  h_path <- file.path(".", "data", "src", "lidar_derived", "chm.tif")
+  h_path <- file.path(".", "data", "src", "lidar_derived", "chm_1m.tif")
   
   # forest cover
-  fc_path <- file.path(".", "data", "src", "lidar_derived", "standard_metrics.tif")
+  fc_path <- file.path(".", "data", "src", "lidar_derived", "std_metrics_mar20.tif")
   
   # dem 
   dem_path <- file.path(".", "data", "src", "lidar_derived", "dem.tif")
@@ -89,6 +89,7 @@ if(TRUE){
   lai_grp <- dem
   lai_grp[dem >= 1560] <- 1
   lai_grp[dem < 1560] <- 0
+  names(lai_grp) <- "lai_grp"
   
   h_i <- h_files %>% 
     terra::project(., fc, method='average')
@@ -103,7 +104,8 @@ if(TRUE){
     
     data_all <- c(data_i, data_ii)
     writeRaster(data_all, 
-                file.path(".", "data", "interm", "ALS_fparams_joined", "ALS_fparams_stack_20m.tif"))
+                file.path(".", "data", "interm", "ALS_fparams_joined", "ALS_fparams_stack_20m_mar22.tif"),
+                overwrite = TRUE)
   }
 
   df_1 <- as.data.frame(data_i, xy=TRUE) %>%
@@ -118,7 +120,7 @@ if(TRUE){
   
   # write fully merged data 
   write.csv(df_i,
-            file.path(output_prod_path, "fc_height_2015_feb11.csv"),
+            file.path(output_prod_path, "fc_height_2015_mar22.csv"),
             row.names = FALSE)
 }
 
@@ -128,7 +130,7 @@ if(TRUE){
 
 set.seed(1113)
 
-df_i <- read.csv(file.path(output_prod_path, "fc_height_2015_feb11.csv"))
+df_i <- read.csv(file.path(output_prod_path, "fc_height_2015_mar22.csv"))
 
 
 # sampled_data <- df_i %>% 

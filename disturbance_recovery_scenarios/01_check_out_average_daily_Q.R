@@ -26,8 +26,8 @@ setwd("C:/Users/blbouf/Sync/Paper2")
 
 hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios", "Runs")
 fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Feb20")
-hru_run_path <- file.path(".", "raven-runs", "Baseline3", "Runs", "Trapping_HRU_baseline_Feb20") # was dec 10
-hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19", "Runs")
+hru_run_path <- file.path(".", "raven-runs", "Baseline3-mar22", "Runs", "Trapping_HRU_baseline_Mar22") # was dec 10
+hru_run_path <- file.path(".", "raven-runs", "disturbance_recovery_scenarios_Feb19 - Copy", "Runs")
 # list of hydrographs
 hydrograph_list_all <- list.files(hru_run_path, pattern="Hydrographs.csv", 
                               recursive = TRUE, 

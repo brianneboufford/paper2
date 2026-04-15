@@ -11,6 +11,7 @@
 #
 # current wd = C:\Users\blbouf\Sync\TrappingCreek\raven-runs\_Trapping_LAI\Trapping_model_runs_reprod
 # github repo: Trapping_model_runs
+# updated March 22 , 2026
 # ------------------------------------------------------------------------------
 
 # library 
@@ -27,7 +28,7 @@ setwd(project_path)
 
 # set up output directory ****************
 # output path
-outpath <- file.path(".", "data", "rvp_rvh_data", "all_forested_Feb19")
+outpath <- file.path(".", "data", "rvp_rvh_data", "all_forested_Mar22")
 
 if (!file.exists(outpath)){
   dir.create(outpath, recursive = TRUE)
@@ -101,21 +102,21 @@ rvn_rvh_write(file.path(outpath, "Trapping_all_forest.rvh"),
 # read all forested LAI data 
 old_all_forested_lai <- read.csv(file.path("..", "TrappingCreek", "raven-runs", "_Trapping_LAI", 
                                         "data", "monthly_LAI", "median_seasonal_curve_lai_recovery_dec2.csv")) %>%
-  select(-c("med_apr_lai"))
+  dplyr::select(-c("med_apr_lai"))
 non_forested_lai <- old_all_forested_lai[old_all_forested_lai$age_class %in% c("WETLAND", "ALPINE", "SHRUB"), ]
 
 all_forested_lai <- read.csv(file.path(".", "data", "median_forest_params_LAI_by_age", 
-                                       "median_LAI_ALS_ELEV_recovery_feb19.csv")) %>% 
+                                       "median_LAI_ALS_ELEV_recovery_mar22.csv")) %>% #was mar19
   pivot_wider(values_from = lai, names_from = month_num) %>%
-  select(-c("lai_grp"))
+  dplyr::select(-c("lai_grp"))
 names(all_forested_lai) <- c("age_class", "med_may_lai", "med_june_lai", "med_july_lai",
                              "med_aug_lai", "med_sept_lai", "med_oct_lai", "med_winter_lai")
 all_forested_lai <- rbind(all_forested_lai, non_forested_lai)
 
 # read in forest cover and height data 
 fc_h <- read.csv(file.path(".", "data", "med_forest_params_curve_fitted", 
-                           "height_fcover_med_Scurve_feb17.csv")) %>% 
-  select(-c("ages"))
+                           "height_fcover_med_Scurve_mar22.csv")) #%>% # was feb17
+  #dplyr::select(-c("ages"))
 
 # make small df for non-forested classes 
 fc_h_non_forested <- data.frame(
@@ -151,16 +152,16 @@ vegclasses_df$MAX_LEAF_COND <- 0
 
 # grab july LAI for peak LAI 
 vegclasses_df <- vegclasses_df %>%
-  left_join(all_forested_lai %>% select(age_class, med_july_lai), by = c("ID" = "age_class")) %>%
+  left_join(all_forested_lai %>% dplyr::select(age_class, med_july_lai), by = c("ID" = "age_class")) %>%
   mutate(MAX_LAI = ifelse(!is.na(med_july_lai), med_july_lai, MAX_LAI)) %>%
-  select(-med_july_lai) 
+  dplyr::select(-med_july_lai) 
 
 vegclasses_df <- vegclasses_df %>% 
-  left_join(fc_h %>% select(c("age_class", "med_h")), by = c("ID" = "age_class"))
+  left_join(fc_h %>% dplyr::select(c("age_class", "med_h")), by = c("ID" = "age_class"))
 
 vegclasses_df$MAX_LAI <- round(vegclasses_df$MAX_LAI, digits = 2)
-vegclasses_df$MAX_HT <- round(as.numeric(vegclasses_df$med_h), digits = 1)/100
-vegclasses_df <- vegclasses_df %>% select(-c("med_h"))
+vegclasses_df$MAX_HT <- round(as.numeric(vegclasses_df$med_h), digits = 1)
+vegclasses_df <- vegclasses_df %>% dplyr::select(-c("med_h"))
 
 # :SeasonalCanopyLAI
 seasonalcanopylai <- get_seasonal_canopy_lai_all_forest(all_forested_lai)
@@ -182,15 +183,15 @@ landuse_df <- data.frame(
   FOREST_COVER = rep("_DEFAULT", length(veg_classes))
 )
 
-landuse_df[, c(2,3)] <- get_LU_classes(veg_classes)
+#landuse_df[, c(2,3)] <- get_LU_classes(veg_classes)
 landuse_df$IMPERM <- 0.0 
 
 landuse_df <- landuse_df %>% 
-  left_join(fc_h %>% select(c("age_class", "med_fc")), by = c("ID" = "age_class"))
+  left_join(fc_h %>% dplyr::select(c("age_class", "med_fc")), by = c("ID" = "age_class"))
 
-landuse_df <- landuse_df %>% select(-c("FOREST_COVER"))
+landuse_df <- landuse_df %>% dplyr::select(-c("FOREST_COVER"))
 names(landuse_df) <- c("ID", "IMPERM", "FOREST_COVER")
-landuse_df$FOREST_COVER <- round(landuse_df$FOREST_COVER, 0)
+landuse_df$FOREST_COVER <- round(landuse_df$FOREST_COVER, 0)/100
 
 # : LanduseParameterList 
 landuseparam_df <- data.frame(
