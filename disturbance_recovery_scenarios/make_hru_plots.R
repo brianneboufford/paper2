@@ -5,6 +5,13 @@
 # ------------------------------------------------------------------------------
 library(patchwork)
 library(ggpubr)
+library(sf)
+library(stringr)
+library(terra)
+library(dplyr)
+library(ggplot2)
+library(cowplot)
+
 setwd("C:/Users/blbouf/Sync/Paper2")
 # ------------------------------------------------------------------------------
 # paths 
@@ -18,7 +25,7 @@ hru_all_forest_path <- file.path(".", "data", "HRU_delineation", "new_HRUs", "Tr
 aspect_path <- file.path(".", "data", "src", "lidar_derived", "aspect.tif")
 slope_path <- file.path(".", "data", "src", "lidar_derived", "slope.tif")
 
-fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Feb20")
+fig_path <- file.path(".", "data", "figs", "disturbance_recovery_scenarios_Mar22")
 
 hru_af <- st_read(hru_all_forest_path)
  
@@ -50,31 +57,52 @@ ggsave(leg,
        width = 8, 
        height = 1)
 
+top <- plot_grid(
+  ggdraw() + draw_label("10%"),
+  ggdraw() + draw_label("15%"),
+  ggdraw() + draw_label("20%"),
+  ggdraw() + draw_label("30%"),
+  ncol = 4
+)
+
 test <- plot_grid(
   plotlist = plots,
   nrow = 2,
-  align = "hv",
-  labels = "auto"
+  align = "hv"
+  #labels = "auto"
 )
 
-test2 <- plot_grid(test, 
+test1 <- plot_grid(top, test, 
+                   ncol = 1, 
+                   rel_heights = c(0.05, 1))
+
+left <- plot_grid(
+  ggdraw() + draw_label("High Elevation", angle = 90),
+  ggdraw() + draw_label("Low Elevation", angle = 90),
+  ncol = 1
+)
+
+test2 <- plot_grid(left, test1, ncol = 2, 
+                   rel_widths = c(0.05, 1))
+
+test3 <- plot_grid(test2, 
                    leg, 
                    nrow = 2, 
                    rel_heights = c(10, 1))
 
-ggsave(test2, 
+ggsave(test3, 
        filename = file.path(fig_path, "simulation_areas_plots_legend.png"),
        dpi = 300,
        units = "in",
-       width = 10, 
+       width = 8, 
        height = 12)
 
-ggsave(test, 
+ggsave(test2, 
        filename = file.path(fig_path, "simulation_areas_plots.png"),
        dpi = 300,
        units = "in",
-       width = 10, 
-       height = 12)
+       width = 8, 
+       height = 10)
 
 # ------------------------------------------------------------------------------
 # functions 
@@ -102,7 +130,7 @@ get_colour_legend <- function(dist_shp,
     FOREST_IDF   = "#5B7F4A",  # muted green
     FOREST_MS    = "#45663A",  # darker muted green
     FOREST_ESSF  = "#2F4F2F",   # dark forest green
-    DISTURBANCE    = "#543005"
+    DISTURBANCE    = "#fdae61"
   )
   
   veg_labs <- c(
@@ -125,12 +153,13 @@ get_colour_legend <- function(dist_shp,
     guides(
       color = "none",   # remove separate color legend
       fill = guide_legend(
-        override.aes = list(color = NA)  # remove borders from legend swatches
+        override.aes = list(color = NA)# remove borders from legend swatches
       )
     ) + 
     theme(legend.position = "bottom")
   
-  leg <- get_legend(sim_plot)
+  leg <- ggpubr::get_legend(sim_plot)
+  
   as_ggplot(leg)
   
 }
@@ -174,7 +203,7 @@ make_dist_scen_plot <- function(dist_shp,
     FOREST_IDF   = "#5B7F4A",  # muted green
     FOREST_MS    = "#45663A",  # darker muted green
     FOREST_ESSF  = "#2F4F2F",   # dark forest green
-    DISTURBANCE    = "#543005"
+    DISTURBANCE    = "#fdae61"
   )
   
   # ----------------------------------------------------------------
@@ -239,22 +268,24 @@ make_dist_scen_plot <- function(dist_shp,
       y = "Percent area (%)",
       title = ""
     ) +
+    ylim(0, 40) +
     theme_minimal() + coord_flip() +
-    theme(axis.text = element_text(size = 6), 
+    theme(axis.text = element_text(size = 8, colour = "black"), 
           axis.title = element_text(size = 8),
-          plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
+          plot.margin = unit(c(0, 0.1, 0, 0.1), "cm"))
   
   slp_plot <- ggplot(slp_summary_df, aes(x = slope_bin, y = percent)) +
     geom_col(fill = "grey", colour = "black", position = "dodge", width = 0.9) +
     labs(
-      x = "Slope (deg)",
+      x = "Slope (°)",
       y = "Percent area (%)",
       title = ""
     ) +
     theme_minimal() + coord_flip() +
-    theme(axis.text = element_text(size = 6), 
+    ylim(0, 40) +
+    theme(axis.text = element_text(size = 8, colour = "black"), 
           axis.title = element_text(size = 8),
-          plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
+          plot.margin = unit(c(0, 0.1, 0, 0.1), "cm"))
   
   sim_plot <- ggplot(hru_sim) +
     geom_sf(aes(fill = VEG_CLA, color = VEG_CLA)) +  # keep color aes but hide borders
@@ -269,7 +300,7 @@ make_dist_scen_plot <- function(dist_shp,
       )
     ) + 
     theme(legend.position = "none", 
-          plot.margin = unit(c(0.1, 0.1, 0.1, 0.1), "cm"))
+          plot.margin = unit(c(0, 0, 0, 0), "cm"))
   
   asp_plot  <- asp_plot  +
     theme(axis.title.x = element_blank())
@@ -283,12 +314,20 @@ make_dist_scen_plot <- function(dist_shp,
       size = 8
     )
   
+  # final_plot <- plot_grid(
+  #   sim_plot,
+  #   plot_grid(asp_plot, slp_plot, ncol = 2),
+  #   x_label,
+  #   ncol = 1,
+  #   rel_heights = c(3, 1, 0.15)
+  # ) + theme(plot.background = element_rect(color = "black"))
+  
   final_plot <- plot_grid(
     sim_plot,
-    plot_grid(asp_plot, slp_plot, ncol = 2),
+    plot_grid(asp_plot, slp_plot, nrow = 2),
     x_label,
     ncol = 1,
-    rel_heights = c(3, 1, 0.15)
+    rel_heights = c(2, 2, 0.15)
   ) + theme(plot.background = element_rect(color = "black"))
   
 }
